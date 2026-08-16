@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickTranslator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI+Variable+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      font-family: 'Segoe UI', 'Segoe UI Variable Text', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    body {
+      /* Simulating Windows 11 Bloom Background */
+      background: #000;
+      background-image: radial-gradient(circle at 50% 100%, #004488 0%, #001133 40%, #000000 100%), 
+                        radial-gradient(circle at 80% 80%, #0033aa 0%, transparent 40%),
+                        radial-gradient(circle at 20% 80%, #0055ff 0%, transparent 40%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* App Window */
+    .win-app {
+      width: 1000px;
+      height: 620px;
+      background: rgba(32, 32, 32, 0.6);
+      backdrop-filter: blur(60px) saturate(150%);
+      -webkit-backdrop-filter: blur(60px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Titlebar */
+    .titlebar {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: transparent;
+    }
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .app-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      color: #38bdf8;
+    }
+    .app-title {
+      font-size: 12px;
+      font-weight: 400;
+      color: #ffffff;
+      letter-spacing: 0.2px;
+    }
+    .title-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 14px;
+      color: #cccccc;
+    }
+    .ctrl-btn {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+    .ctrl-btn.close:hover {
+      background: #e81123;
+    }
+
+    /* Main Container */
+    .app-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px;
+    }
+    .nav-top, .nav-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 8px;
+      border-radius: 6px;
+      color: #cccccc;
+      font-size: 12px;
+      font-weight: 400;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+    .nav-item.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: 0px;
+      top: 16px;
+      bottom: 16px;
+      width: 3px;
+      background: #38bdf8;
+      border-radius: 4px;
+    }
+    .nav-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Canvas / Main Content */
+    .main-canvas {
+      flex: 1;
+      background: #181818;
+      border-top-left-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: none;
+      border-right: none;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow: hidden;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,0.02);
+    }
+
+    /* Language Selection Bar */
+    .language-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 4px;
+    }
+    .lang-dropdown {
+      flex: 1;
+      height: 38px;
+      background: #2b2b2b;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 400;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .lang-dropdown:hover {
+      background: #333333;
+    }
+    .dropdown-arrow {
+      color: #aaaaaa;
+      font-size: 10px;
+    }
+    .swap-circle-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: none;
+      color: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);
+      flex-shrink: 0;
+    }
+    .swap-circle-btn:hover {
+      background: #7dd3fc;
+    }
+    .swap-circle-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Translation Dual Cards */
+    .cards-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      overflow: hidden;
+    }
+    .card-box {
+      background: #242424;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .text-area-container {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .main-textarea {
+      width: 100%;
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      font-size: 16px;
+      line-height: 1.5;
+      font-weight: 400;
+      resize: none;
+      outline: none;
+      user-select: text;
+    }
+    .main-textarea::placeholder {
+      color: #888888;
+    }
+    .result-text {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #ffffff;
+      user-select: text;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    /* Actions inside the text area */
+    .inner-actions-right {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+    }
+    .inner-actions-left {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-clear {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-clear:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .btn-copy-primary {
+      background: #38bdf8;
+      border: none;
+      color: #000000;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 16px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-copy-primary:hover {
+      background: #7dd3fc;
+    }
+    .btn-icon-only {
+      color: #38bdf8;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      transition: color 0.15s;
+    }
+    .btn-icon-only:hover {
+      color: #7dd3fc;
+    }
+
+    /* Card Footers */
+    .card-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.06);
+      width: 100%;
+    }
+    .card-footer {
+      height: 40px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-text {
+      font-size: 12px;
+      color: #aaaaaa;
+    }
+    .footer-action {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #ffffff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .footer-action svg {
+      color: #ffffff;
+    }
+    
+    .ready-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+    .ready-dot {
+      width: 6px;
+      height: 6px;
+      background: #4ade80;
+      border-radius: 50%;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #38bdf8;
+      color: #0f172a;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-6px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Window Container -->
+  <div class="win-app">
+    
+    <!-- Titlebar -->
+    <header class="titlebar">
+      <div class="titlebar-left">
+        <div class="app-logo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>
+          </svg>
+        </div>
+        <span class="app-title">QuickTranslator</span>
+      </div>
+      <div class="title-controls">
+        <span class="ctrl-btn"><svg width="12" height="12" viewBox="0 0 12 12"><path fill="currentColor" d="M1 5h10v1H1z"/></svg></span>
+        <span class="ctrl-btn"><svg width="12" height="12" viewBox="0 0 12 12"><path fill="currentColor" d="M1 1h10v10H1V1zm1 1v8h8V2H2z"/></svg></span>
+        <span class="ctrl-btn close"><svg width="12" height="12" viewBox="0 0 12 12"><path fill="currentColor" d="M1.5 1.5l9 9m-9 0l9-9" stroke="currentColor" stroke-width="1.5"/></svg></span>
+      </div>
+    </header>
+
+    <!-- App Body Layout -->
+    <div class="app-layout">
+      
+      <!-- Left Sidebar -->
+      <nav class="sidebar">
+        <div class="nav-top">
+          <!-- Active Translate Item -->
+          <div class="nav-item active">
+            <div class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>
+              </svg>
+            </div>
+            <span>Translate</span>
+          </div>
+
+          <!-- History Item -->
+          <div class="nav-item">
+            <div class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <span>History</span>
+          </div>
+          
+          <!-- Settings Item (Top group) -->
+          <div class="nav-item">
+            <div class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <span>Settings</span>
+          </div>
+        </div>
+
+        <div class="nav-bottom">
+          <!-- Settings Item (Bottom group) -->
+          <div class="nav-item">
+            <div class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <span>Settings</span>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Main Canvas Area -->
+      <main class="main-canvas">
+        
+        <!-- Language Selector Bar -->
+        <section class="language-bar">
+          <div class="lang-dropdown" id="dropdown-source">
+            <span id="source-lang-label">Auto Detect</span>
+            <span class="dropdown-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+
+          <button class="swap-circle-btn" id="btn-swap-lang" title="Swap languages">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m16 3 4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/>
+            </svg>
+          </button>
+
+          <div class="lang-dropdown" id="dropdown-target">
+            <span id="target-lang-label">Spanish</span>
+            <span class="dropdown-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+        </section>
+
+        <!-- Translation Cards Grid -->
+        <section class="cards-container">
+          
+          <!-- Source Card -->
+          <div class="card-box">
+            <div class="text-area-container">
+              <textarea 
+                id="source-input" 
+                class="main-textarea" 
+                placeholder="Type or paste text here..." 
+                spellcheck="false"
+              ></textarea>
+              
+              <div class="inner-actions-right">
+                <button class="btn-clear" id="btn-clear-source">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  Clear
+                </button>
+              </div>
+            </div>
+            
+            <div class="card-divider"></div>
+
+            <div class="card-footer">
+              <span class="footer-text" id="char-count-display">128/5000 chars</span>
+            </div>
+          </div>
+
+          <!-- Target Card -->
+          <div class="card-box">
+            <div class="text-area-container">
+              <div class="result-text" id="result-display">Hola! ¿Cómo estás hoy?</div>
+              
+              <div class="inner-actions-left">
+                <button class="btn-copy-primary" id="btn-copy">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                  </svg>
+                  Copy
+                </button>
+                <button class="btn-icon-only">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="card-divider"></div>
+
+            <div class="card-footer">
+              <div class="footer-action" id="btn-star">
+                <svg id="star-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                <span>Star Favorite</span>
+              </div>
+              <div class="ready-badge">
+                <span class="ready-dot"></span>
+                <span id="status-label">Ready</span>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast-msg">Copied to clipboard!</div>
+
+  </div>
+
+  <script>
+    const inputEl = document.getElementById('source-input');
+    const resultEl = document.getElementById('result-display');
+    const charCountEl = document.getElementById('char-count-display');
+    const btnClear = document.getElementById('btn-clear-source');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnStar = document.getElementById('btn-star');
+    const starIcon = document.getElementById('star-icon');
+    const btnSwap = document.getElementById('btn-swap-lang');
+    const toast = document.getElementById('toast-msg');
+    let debounceTimer = null;
+
+    let sourceLang = "auto";
+    let targetLang = "es";
+
+    function showToast(text = "Copied to clipboard!") {
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    async function translate(text) {
+      if (!text.trim()) {
+        resultEl.textContent = "Hola! ¿Cómo estás hoy?";
+        return;
+      }
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+        const data = await res.json();
+        if (data && data[0]) {
+          resultEl.textContent = data[0].map(s => s[0]).join('');
+        }
+      } catch (err) {
+        resultEl.textContent = text;
+      }
+    }
+
+    inputEl.addEventListener('input', () => {
+      charCountEl.textContent = `${inputEl.value.length}/5000 chars`;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => translate(inputEl.value), 300);
+    });
+
+    btnClear.addEventListener('click', () => {
+      inputEl.value = '';
+      charCountEl.textContent = '0/5000 chars';
+      resultEl.textContent = '';
+      inputEl.focus();
+    });
+
+    btnCopy.addEventListener('click', () => {
+      const text = resultEl.textContent.trim();
+      if (text) {
+        navigator.clipboard.writeText(text);
+        showToast("Copied to clipboard!");
+      }
+    });
+
+    btnStar.addEventListener('click', () => {
+      btnStar.classList.toggle('starred');
+      const isStarred = btnStar.classList.contains('starred');
+      if (isStarred) {
+        starIcon.setAttribute('fill', '#ffffff');
+        showToast("Added to Favorites!");
+      } else {
+        starIcon.setAttribute('fill', 'none');
+        showToast("Removed from Favorites");
+      }
+    });
+
+    btnSwap.addEventListener('click', () => {
+      const srcLabel = document.getElementById('source-lang-label');
+      const tgtLabel = document.getElementById('target-lang-label');
+      const tempLabel = srcLabel.textContent;
+      srcLabel.textContent = tgtLabel.textContent;
+      tgtLabel.textContent = tempLabel === "Auto Detect" ? "English" : tempLabel;
+      
+      const tempLang = sourceLang === "auto" ? "en" : sourceLang;
+      sourceLang = targetLang;
+      targetLang = tempLang;
+
+      if (inputEl.value.trim()) {
+        translate(inputEl.value);
+      }
+    });
+  </script>
+</body>
+</html>

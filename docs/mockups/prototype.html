@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickTranslator - Windows 11 Fluent 2 Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI+Variable+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Windows 11 Fluent 2 Light Tokens */
+      --bg-window: #f3f3f3;
+      --bg-sidebar: #eaeaea;
+      --bg-card: #ffffff;
+      --bg-card-subtle: #f9f9f9;
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.16);
+      --text-primary: #1c1c1c;
+      --text-secondary: #5f5f5f;
+      --text-tertiary: #8c8c8c;
+      --accent: #0067c0;
+      --accent-hover: #1879cd;
+      --accent-active: #005a9e;
+      --accent-tint: rgba(0, 103, 192, 0.08);
+      --nav-active-bg: rgba(0, 0, 0, 0.05);
+      --input-bg: #ffffff;
+      --pill-bg: #e6e6e6;
+      --pill-active-bg: #0067c0;
+      --pill-active-text: #ffffff;
+      --status-green: #107c41;
+      --status-green-bg: rgba(16, 124, 65, 0.1);
+      --shadow-elevation: 0 16px 36px rgba(0, 0, 0, 0.14), 0 4px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    [data-theme="dark"] {
+      /* Windows 11 Fluent 2 Dark (Mica) Tokens */
+      --bg-window: #1e1e1e;
+      --bg-sidebar: #202020;
+      --bg-card: #2b2b2b;
+      --bg-card-subtle: #242424;
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-strong: rgba(255, 255, 255, 0.14);
+      --text-primary: #ffffff;
+      --text-secondary: #adadad;
+      --text-tertiary: #787878;
+      --accent: #60cdff;
+      --accent-hover: #78d5ff;
+      --accent-active: #4cc2ff;
+      --accent-tint: rgba(96, 205, 255, 0.14);
+      --nav-active-bg: #273847;
+      --input-bg: #1c1c1c;
+      --pill-bg: #333333;
+      --pill-active-bg: #005ea6;
+      --pill-active-text: #ffffff;
+      --status-green: #54e676;
+      --status-green-bg: rgba(19, 59, 30, 0.7);
+      --shadow-elevation: 0 20px 48px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      font-family: 'Segoe UI Variable Text', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    body {
+      background: #0d1117;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: var(--text-primary);
+    }
+
+    /* Demonstration Overlay Controls Banner */
+    .demo-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 13px;
+      color: #eaeaea;
+      backdrop-filter: blur(10px);
+    }
+    .demo-btn {
+      background: #0078d4;
+      color: white;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .demo-btn:hover {
+      background: #1886df;
+    }
+
+    /* Main Window Shell */
+    .win-app {
+      width: 980px;
+      height: 680px;
+      background: var(--bg-window);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      box-shadow: var(--shadow-elevation);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Titlebar */
+    .titlebar {
+      height: 40px;
+      min-height: 40px;
+      background: var(--bg-sidebar);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+    }
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .title-logo {
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+    }
+    .title-text {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .hotkey-badge {
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--accent-tint);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      border: 1px solid var(--border-subtle);
+    }
+    .title-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Body Layout */
+    .app-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Sidebar Navigation (WinUI 3 NavigationView) */
+    .sidebar {
+      width: 220px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 8px;
+    }
+    .nav-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 14px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-primary);
+    }
+    .nav-item.active {
+      background: var(--nav-active-bg);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* Main Content Area */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .page-title {
+      font-size: 26px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    /* PAGE: TRANSLATE */
+    .translate-page {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+    }
+    .lang-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-card-subtle);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+    }
+    .select-box {
+      flex: 1;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+    .swap-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.15s;
+    }
+    .swap-btn:hover {
+      background: var(--accent-tint);
+      color: var(--accent);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      flex: 1;
+    }
+    .editor-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .editor-card-header {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-card-subtle);
+      display: flex;
+      justify-content: space-between;
+    }
+    .card-textarea {
+      flex: 1;
+      padding: 14px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 22px;
+      resize: none;
+      outline: none;
+      user-select: text;
+    }
+    .card-footer {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: 0.15s;
+    }
+    .btn-action:hover {
+      background: var(--accent-tint);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      font-weight: 600;
+    }
+    [data-theme="dark"] .btn-primary {
+      color: #000;
+    }
+    [data-theme="light"] .btn-primary {
+      color: #fff;
+    }
+
+    /* PAGE: HISTORY */
+    .history-page {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+    }
+    .history-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .search-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border-strong);
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+    }
+    .filter-chip {
+      background: var(--pill-bg);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .filter-chip.active {
+      background: var(--pill-active-bg);
+      color: var(--pill-active-text);
+      font-weight: 600;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .history-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .history-card:hover {
+      border-color: var(--accent);
+      background: var(--bg-card-subtle);
+    }
+    .history-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .history-langs {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .history-src {
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    .history-res {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .history-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .icon-only-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .icon-only-btn:hover {
+      background: var(--nav-active-bg);
+      color: var(--text-primary);
+    }
+
+    /* PAGE: SETTINGS */
+    .settings-page {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+    .settings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .settings-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .settings-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .settings-card-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 22px;
+      background: #444444;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .toggle-switch.on {
+      background: #0078d4;
+    }
+    .toggle-switch::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: 0.2s;
+    }
+    .toggle-switch.on::after {
+      left: 25px;
+    }
+    .theme-pills {
+      display: flex;
+      background: var(--input-bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .theme-pill {
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+    .theme-pill.active {
+      background: var(--pill-active-bg);
+      color: var(--pill-active-text);
+      font-weight: 600;
+    }
+
+    .fallback-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--status-green-bg);
+      color: var(--status-green);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* COMPANION POPUP WINDOW */
+    .companion-popup {
+      position: absolute;
+      top: 80px;
+      right: 40px;
+      width: 360px;
+      background: var(--bg-card);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      overflow: hidden;
+      animation: popIn 0.2s ease-out;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .popup-header {
+      padding: 10px 14px;
+      background: var(--bg-card-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .popup-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .popup-input {
+      width: 100%;
+      height: 70px;
+      background: var(--input-bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 8px;
+      font-size: 13px;
+      resize: none;
+      outline: none;
+    }
+    .popup-output {
+      padding: 8px;
+      background: var(--bg-card-subtle);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-primary);
+      min-height: 50px;
+    }
+    .popup-footer {
+      padding: 8px 14px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Demonstration Navigation Banner -->
+  <div class="demo-bar">
+    <span>🖥️ <b>QuickTranslator Interactive Prototype</b> (WinUI 3 & Fluent 2)</span>
+    <button class="demo-btn" id="btn-toggle-popup">Simulate 2× Ctrl Popup</button>
+  </div>
+
+  <!-- Main Window -->
+  <div class="win-app">
+    <!-- Titlebar -->
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <div class="title-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>
+          </svg>
+        </div>
+        <span class="title-text">QuickTranslator</span>
+        <span class="hotkey-badge">2× Ctrl</span>
+      </div>
+      <div class="title-controls">
+        <span>—</span>
+        <span>🗖</span>
+        <span>✕</span>
+      </div>
+    </div>
+
+    <!-- Body Layout -->
+    <div class="app-body">
+      <!-- Left Sidebar -->
+      <nav class="sidebar">
+        <div class="nav-group">
+          <div class="nav-item active" data-page="translate">
+            <span>🔤</span>
+            <span>Translate</span>
+          </div>
+          <div class="nav-item" data-page="history">
+            <span>🕒</span>
+            <span>History</span>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-item" data-page="settings">
+            <span>⚙️</span>
+            <span>Settings</span>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Content Area -->
+      <main class="content-area">
+
+        <!-- ================= PAGE 1: TRANSLATE ================= -->
+        <section id="page-translate" class="translate-page">
+          <div class="lang-toolbar">
+            <select id="sel-source-lang" class="select-box">
+              <option value="auto">🌐 Auto Detect</option>
+              <option value="en" selected>English</option>
+              <option value="es">Spanish</option>
+              <option value="id">Indonesian</option>
+              <option value="zh-CN">Chinese (Simplified)</option>
+              <option value="ja">Japanese</option>
+              <option value="ru">Russian</option>
+              <option value="ko">Korean</option>
+            </select>
+
+            <button id="btn-swap" class="swap-btn" title="Swap languages">⇄</button>
+
+            <select id="sel-target-lang" class="select-box">
+              <option value="es" selected>Spanish</option>
+              <option value="en">English</option>
+              <option value="id">Indonesian</option>
+              <option value="zh-CN">Chinese (Simplified)</option>
+              <option value="ja">Japanese</option>
+              <option value="ru">Russian</option>
+              <option value="ko">Korean</option>
+            </select>
+          </div>
+
+          <div class="cards-grid">
+            <!-- Left: Source -->
+            <div class="editor-card">
+              <div class="editor-card-header">
+                <span>Source Text</span>
+                <span id="char-count">0 / 5000</span>
+              </div>
+              <textarea id="translate-input" class="card-textarea" placeholder="Type or paste text here..."></textarea>
+              <div class="card-footer">
+                <button id="btn-clear-text" class="btn-action">✕ Clear</button>
+                <span class="fallback-badge">● Bing / Google Active</span>
+              </div>
+            </div>
+
+            <!-- Right: Result -->
+            <div class="editor-card">
+              <div class="editor-card-header">
+                <span>Translation</span>
+                <span id="trans-status" style="color: var(--status-green);">● Ready</span>
+              </div>
+              <div id="translate-output" class="card-textarea" style="overflow-y:auto; color: var(--text-primary);">
+                <span style="color: var(--text-tertiary); font-style: italic;">Translation will appear here instantly...</span>
+              </div>
+              <div class="card-footer">
+                <div style="display:flex; gap:8px;">
+                  <button id="btn-copy-result" class="btn-action">📋 Copy</button>
+                  <button id="btn-star-result" class="btn-action">⭐ Favorite</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= PAGE 2: HISTORY ================= -->
+        <section id="page-history" class="history-page hidden">
+          <div class="page-title">Translation History</div>
+          <div class="history-filter-bar">
+            <input type="text" id="history-search" class="search-input" placeholder="Search history records...">
+            <button class="filter-chip active" data-filter="all">All</button>
+            <button class="filter-chip" data-filter="starred">⭐ Starred</button>
+            <button id="btn-clear-all-history" class="btn-action" style="color:#ff99a4;">Clear All</button>
+          </div>
+
+          <div id="history-items-container" class="history-list">
+            <!-- History items rendered here -->
+          </div>
+        </section>
+
+        <!-- ================= PAGE 3: SETTINGS ================= -->
+        <section id="page-settings" class="settings-page hidden">
+          <div class="page-title">Settings</div>
+
+          <!-- Card 1: Providers & Fallback Engine -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <div>
+                <div class="settings-card-title">🌐 Translation Providers & Fallback Engine</div>
+                <div class="settings-card-subtitle">Configure primary translation service and auto-recovery chain.</div>
+              </div>
+              <span class="fallback-badge">● Fallback: Google ➔ Bing Active</span>
+            </div>
+
+            <div class="settings-row" style="margin-top: 6px;">
+              <label style="font-size:13px; font-weight:500;">Primary Provider:</label>
+              <select id="sel-provider" class="select-box" style="max-width:320px;">
+                <option value="bing">1. Bing / Edge (Free • Built-in)</option>
+                <option value="google">2. Google Translate (Free • Built-in)</option>
+                <option value="deepl">3. DeepL (API Key Required)</option>
+                <option value="baidu">4. Baidu Fanyi (AppID + Key)</option>
+                <option value="papago">5. Naver Papago (ClientID + Secret)</option>
+                <option value="yandex">6. Yandex Translate (API Key)</option>
+                <option value="youdao">7. Youdao Translate (AppKey + Secret)</option>
+                <option value="azure">8. Microsoft Azure Translator</option>
+                <option value="libre">9. LibreTranslate (Self-hosted URL)</option>
+              </select>
+            </div>
+
+            <div class="settings-row" id="provider-creds-row" style="display:none;">
+              <input type="password" id="input-api-key" class="search-input" placeholder="Enter API Key / App Secret...">
+              <button id="btn-test-api" class="btn-action btn-primary" style="white-space:nowrap;">⚡ Test Connection</button>
+            </div>
+            <div id="test-feedback" style="font-size:12px; display:none;"></div>
+          </div>
+
+          <!-- Card 2: Hotkeys -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <div>
+                <div class="settings-card-title">⌨️ Global Shortcuts & Overlay</div>
+                <div class="settings-card-subtitle">Summon floating companion overlay anywhere on Windows.</div>
+              </div>
+              <div class="toggle-switch on" id="toggle-hotkey"></div>
+            </div>
+            <div class="settings-row">
+              <span style="font-size:13px; color:var(--text-secondary);">Shortcut mode: <b>Double-tap Ctrl</b></span>
+            </div>
+          </div>
+
+          <!-- Card 3: Appearance -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <div>
+                <div class="settings-card-title">🎨 Appearance & Theme</div>
+                <div class="settings-card-subtitle">Choose application theme and visual material.</div>
+              </div>
+              <div class="theme-pills">
+                <button class="theme-pill" data-theme-val="light">Light</button>
+                <button class="theme-pill active" data-theme-val="dark">Dark</button>
+                <button class="theme-pill" data-theme-val="system">System</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Startup & Tray -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <div>
+                <div class="settings-card-title">🚀 Startup & System Tray</div>
+                <div class="settings-card-subtitle">Keep QuickTranslator active in the background.</div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <span style="font-size:13px;">Launch on Windows Startup</span>
+              <div class="toggle-switch on" id="toggle-startup"></div>
+            </div>
+            <div class="settings-row">
+              <span style="font-size:13px;">Minimize to System Tray on close</span>
+              <div class="toggle-switch on" id="toggle-tray"></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- ================= COMPANION QUICK POPUP OVERLAY ================= -->
+    <div id="companion-overlay" class="companion-popup hidden">
+      <div class="popup-header">
+        <span style="display:flex; align-items:center; gap:6px; color:var(--accent);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>
+          </svg>
+          QuickTranslator • 2× Ctrl
+        </span>
+        <button id="btn-close-popup" class="icon-only-btn">✕</button>
+      </div>
+      <div class="popup-body">
+        <textarea id="popup-input" class="popup-input" placeholder="Type text to translate quickly..."></textarea>
+        <div id="popup-output" class="popup-output">Translation appears here...</div>
+      </div>
+      <div class="popup-footer">
+        <span>Press <b>Esc</b> to dismiss</span>
+        <button id="btn-popup-copy" class="btn-action" style="padding:2px 8px;">Copy</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- Mock Data & State ---
+    let historyData = [
+      { id: 1, src: "Hello, how are you doing today?", res: "Hola, ¿cómo estás hoy?", from: "EN", to: "ES", time: "5 mins ago", starred: true },
+      { id: 2, src: "QuickTranslator makes translation easy.", res: "QuickTranslator facilita la traducción.", from: "EN", to: "ES", time: "25 mins ago", starred: false },
+      { id: 3, src: "Please review the document before 5 PM.", res: "Por favor revise el documento antes de las 5 PM.", from: "EN", to: "ES", time: "2 hours ago", starred: true }
+    ];
+
+    // --- Page Navigation ---
+    const navItems = document.querySelectorAll('.nav-item');
+    const pages = {
+      translate: document.getElementById('page-translate'),
+      history: document.getElementById('page-history'),
+      settings: document.getElementById('page-settings'),
+    };
+
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        navItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const pageKey = item.getAttribute('data-page');
+        Object.keys(pages).forEach(k => {
+          pages[k].classList.toggle('hidden', k !== pageKey);
+        });
+      });
+    });
+
+    // --- Live Translation with Fallback Demo ---
+    const inputEl = document.getElementById('translate-input');
+    const outputEl = document.getElementById('translate-output');
+    const charCountEl = document.getElementById('char-count');
+    const transStatusEl = document.getElementById('trans-status');
+    let debounceTimer = null;
+
+    async function performTranslation(text) {
+      if (!text.trim()) {
+        outputEl.innerHTML = `<span style="color: var(--text-tertiary); font-style: italic;">Translation will appear here instantly...</span>`;
+        transStatusEl.textContent = '● Ready';
+        transStatusEl.style.color = 'var(--status-green)';
+        return;
+      }
+
+      transStatusEl.textContent = 'Translating...';
+      transStatusEl.style.color = '#f7630c';
+
+      const sl = document.getElementById('sel-source-lang').value;
+      const tl = document.getElementById('sel-target-lang').value;
+
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`);
+        const data = await res.json();
+        if (data && data[0]) {
+          const translated = data[0].map(s => s[0]).join('');
+          outputEl.textContent = translated;
+          transStatusEl.textContent = '● Ready';
+          transStatusEl.style.color = 'var(--status-green)';
+          
+          // Add to history
+          historyData.unshift({
+            id: Date.now(),
+            src: text,
+            res: translated,
+            from: sl.toUpperCase(),
+            to: tl.toUpperCase(),
+            time: 'Just now',
+            starred: false
+          });
+          renderHistory();
+        }
+      } catch (err) {
+        outputEl.textContent = "Auto-recovered via fallback engine.";
+        transStatusEl.textContent = '● Auto-recovered';
+        transStatusEl.style.color = 'var(--status-green)';
+      }
+    }
+
+    inputEl.addEventListener('input', () => {
+      charCountEl.textContent = `${inputEl.value.length} / 5000`;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => performTranslation(inputEl.value), 350);
+    });
+
+    document.getElementById('btn-clear-text').addEventListener('click', () => {
+      inputEl.value = '';
+      charCountEl.textContent = '0 / 5000';
+      performTranslation('');
+    });
+
+    document.getElementById('btn-swap').addEventListener('click', () => {
+      const s = document.getElementById('sel-source-lang');
+      const t = document.getElementById('sel-target-lang');
+      const temp = s.value === 'auto' ? 'en' : s.value;
+      s.value = t.value;
+      t.value = temp;
+      if (inputEl.value) performTranslation(inputEl.value);
+    });
+
+    document.getElementById('btn-copy-result').addEventListener('click', () => {
+      navigator.clipboard.writeText(outputEl.textContent);
+      alert('Copied translation to clipboard!');
+    });
+
+    // --- History Page Logic ---
+    function renderHistory(filter = 'all', query = '') {
+      const container = document.getElementById('history-items-container');
+      let filtered = historyData;
+      if (filter === 'starred') filtered = filtered.filter(h => h.starred);
+      if (query.trim()) {
+        const q = query.toLowerCase();
+        filtered = filtered.filter(h => h.src.toLowerCase().includes(q) || h.res.toLowerCase().includes(q));
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-tertiary);">No translation history found.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
+        <div class="history-card" data-id="${item.id}">
+          <div class="history-card-info">
+            <span class="history-langs">${item.from} → ${item.to} • ${item.time}</span>
+            <span class="history-src">${item.src}</span>
+            <span class="history-res">${item.res}</span>
+          </div>
+          <div class="history-actions">
+            <button class="icon-only-btn star-toggle" data-id="${item.id}">${item.starred ? '⭐' : '☆'}</button>
+            <button class="icon-only-btn delete-item" data-id="${item.id}">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+
+      // Attach card click to restore into translator
+      container.querySelectorAll('.history-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.icon-only-btn')) return;
+          const id = Number(card.getAttribute('data-id'));
+          const found = historyData.find(h => h.id === id);
+          if (found) {
+            inputEl.value = found.src;
+            outputEl.textContent = found.res;
+            charCountEl.textContent = `${found.src.length} / 5000`;
+            navItems[0].click();
+          }
+        });
+      });
+
+      // Star and Delete handlers
+      container.querySelectorAll('.star-toggle').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = Number(btn.getAttribute('data-id'));
+          const item = historyData.find(h => h.id === id);
+          if (item) { item.starred = !item.starred; renderHistory(filter, query); }
+        });
+      });
+
+      container.querySelectorAll('.delete-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = Number(btn.getAttribute('data-id'));
+          historyData = historyData.filter(h => h.id !== id);
+          renderHistory(filter, query);
+        });
+      });
+    }
+
+    renderHistory();
+
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        renderHistory(chip.getAttribute('data-filter'), document.getElementById('history-search').value);
+      });
+    });
+
+    document.getElementById('history-search').addEventListener('input', (e) => {
+      const activeFilter = document.querySelector('.filter-chip.active').getAttribute('data-filter');
+      renderHistory(activeFilter, e.target.value);
+    });
+
+    document.getElementById('btn-clear-all-history').addEventListener('click', () => {
+      if (confirm('Clear all translation history?')) {
+        historyData = [];
+        renderHistory();
+      }
+    });
+
+    // --- Settings Logic ---
+    const selProvider = document.getElementById('sel-provider');
+    const credsRow = document.getElementById('provider-creds-row');
+    const feedback = document.getElementById('test-feedback');
+
+    selProvider.addEventListener('change', () => {
+      const val = selProvider.value;
+      if (val === 'bing' || val === 'google') {
+        credsRow.style.display = 'none';
+        feedback.style.display = 'none';
+      } else {
+        credsRow.style.display = 'flex';
+        feedback.style.display = 'none';
+      }
+    });
+
+    document.getElementById('btn-test-api').addEventListener('click', () => {
+      feedback.style.display = 'block';
+      feedback.style.color = 'var(--status-green)';
+      feedback.textContent = '✓ Connection successful! API is valid and operational.';
+    });
+
+    // Theme toggling
+    document.querySelectorAll('.theme-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.theme-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const theme = pill.getAttribute('data-theme-val');
+        document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+      });
+    });
+
+    // Toggle switches
+    document.querySelectorAll('.toggle-switch').forEach(sw => {
+      sw.addEventListener('click', () => sw.classList.toggle('on'));
+    });
+
+    // --- Quick Popup Overlay Simulation ---
+    const overlay = document.getElementById('companion-overlay');
+    const btnSimulate = document.getElementById('btn-toggle-popup');
+    const popupInput = document.getElementById('popup-input');
+    const popupOutput = document.getElementById('popup-output');
+
+    btnSimulate.addEventListener('click', () => {
+      overlay.classList.toggle('hidden');
+      if (!overlay.classList.contains('hidden')) {
+        popupInput.focus();
+      }
+    });
+
+    document.getElementById('btn-close-popup').addEventListener('click', () => {
+      overlay.classList.add('hidden');
+    });
+
+    popupInput.addEventListener('input', async () => {
+      if (!popupInput.value.trim()) {
+        popupOutput.textContent = 'Translation appears here...';
+        return;
+      }
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=es&dt=t&q=${encodeURIComponent(popupInput.value)}`);
+        const data = await res.json();
+        if (data && data[0]) popupOutput.textContent = data[0].map(s => s[0]).join('');
+      } catch (e) {
+        popupOutput.textContent = 'Auto-recovered translation.';
+      }
+    });
+
+    document.getElementById('btn-popup-copy').addEventListener('click', () => {
+      navigator.clipboard.writeText(popupOutput.textContent);
+      alert('Copied from popup overlay!');
+    });
+  </script>
+</body>
+</html>
