@@ -1,0 +1,74 @@
+<Window
+    x:Class="QuickTranslator.QuickPopup"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:QuickTranslator"
+    Title="DoubleTake">
+
+    <Grid Padding="8">
+        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="16">
+            <StackPanel Spacing="10">
+
+                <!-- ── Header Row ── -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE8BD;" FontSize="13" Foreground="#38BDF8" />
+                        <TextBlock Text="DoubleTake" FontSize="12" FontWeight="SemiBold" Foreground="#38BDF8" />
+                        <Border Background="#1A38BDF8" CornerRadius="4" Padding="6,1" Margin="4,0,0,0">
+                            <TextBlock Text="Translate" FontSize="10" Foreground="#38BDF8" />
+                        </Border>
+                    </StackPanel>
+                    <Button Grid.Column="2" x:Name="CloseButton" Click="CloseButton_Click"
+                            Padding="4" Background="Transparent" BorderThickness="0">
+                        <FontIcon Glyph="&#xE711;" FontSize="11" />
+                    </Button>
+                </Grid>
+
+                <!-- ── Original Source Text ── -->
+                <ScrollViewer MaxHeight="85" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="SourceTextBlock" FontSize="13"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                </ScrollViewer>
+
+                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" Margin="0,2" />
+
+                <!-- ── Translated Result Text ── -->
+                <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="TranslatedTextBlock" FontSize="15" FontWeight="SemiBold"
+                               Foreground="#38BDF8" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                </ScrollViewer>
+
+                <!-- ── Footer Action Row ── -->
+                <Grid Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ProgressRing x:Name="LoadingRing" Width="14" Height="14" IsActive="False" Visibility="Collapsed" />
+                        <TextBlock x:Name="TranslateStatusText" Text="Google Translate" FontSize="11"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button Grid.Column="2" x:Name="CopyButton" Click="CopyButton_Click" Padding="10,5" FontSize="11">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE8C8;" FontSize="11" />
+                            <TextBlock Text="Copy" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

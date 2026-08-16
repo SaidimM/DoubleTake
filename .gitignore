@@ -1,0 +1,22 @@
+## Build and Output Folders
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+*.msix
+*.appx
+*.appxbundle
+*.msixbundle
+PackageOutput/
+crash.log
+
+## OS Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
