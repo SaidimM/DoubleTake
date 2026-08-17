@@ -12,6 +12,14 @@ using Windows.UI;
 
 namespace QuickTranslator
 {
+    public class HistoryGroup
+    {
+        public string Header { get; set; }
+        public int Count => Items?.Count ?? 0;
+        public string CountBadge => $"{Count} {(Count == 1 ? "item" : "items")}";
+        public List<HistoryEntry> Items { get; set; } = new List<HistoryEntry>();
+    }
+
     public sealed partial class MainWindow : Window
     {
         private readonly TranslationService _translator;
@@ -205,7 +213,62 @@ namespace QuickTranslator
         private void RefreshHistoryView(string query = null)
         {
             var items = string.IsNullOrWhiteSpace(query) ? HistoryService.GetAll() : HistoryService.Search(query);
-            HistoryListView.ItemsSource = items;
+
+            if (items == null || items.Count == 0)
+            {
+                EmptyHistoryState.Visibility = Visibility.Visible;
+                HistoryScrollViewer.Visibility = Visibility.Collapsed;
+                HistoryGroupedItemsControl.ItemsSource = null;
+                return;
+            }
+
+            EmptyHistoryState.Visibility = Visibility.Collapsed;
+            HistoryScrollViewer.Visibility = Visibility.Visible;
+
+            var today = DateTime.Today;
+            var yesterday = today.AddDays(-1);
+            var thisWeekStart = today.AddDays(-7);
+            var thisMonthStart = today.AddDays(-30);
+
+            var todayItems = new List<HistoryEntry>();
+            var yesterdayItems = new List<HistoryEntry>();
+            var thisWeekItems = new List<HistoryEntry>();
+            var thisMonthItems = new List<HistoryEntry>();
+            var olderItems = new List<HistoryEntry>();
+
+            foreach (var item in items)
+            {
+                var itemDate = item.Timestamp.Date;
+                if (itemDate >= today)
+                {
+                    todayItems.Add(item);
+                }
+                else if (itemDate >= yesterday)
+                {
+                    yesterdayItems.Add(item);
+                }
+                else if (itemDate >= thisWeekStart)
+                {
+                    thisWeekItems.Add(item);
+                }
+                else if (itemDate >= thisMonthStart)
+                {
+                    thisMonthItems.Add(item);
+                }
+                else
+                {
+                    olderItems.Add(item);
+                }
+            }
+
+            var groups = new List<HistoryGroup>();
+            if (todayItems.Count > 0) groups.Add(new HistoryGroup { Header = "Today", Items = todayItems });
+            if (yesterdayItems.Count > 0) groups.Add(new HistoryGroup { Header = "Yesterday", Items = yesterdayItems });
+            if (thisWeekItems.Count > 0) groups.Add(new HistoryGroup { Header = "Earlier this Week", Items = thisWeekItems });
+            if (thisMonthItems.Count > 0) groups.Add(new HistoryGroup { Header = "Earlier this Month", Items = thisMonthItems });
+            if (olderItems.Count > 0) groups.Add(new HistoryGroup { Header = "Older", Items = olderItems });
+
+            HistoryGroupedItemsControl.ItemsSource = groups;
         }
 
         private void HistorySearchBox_TextChanged(object sender, TextChangedEventArgs e)

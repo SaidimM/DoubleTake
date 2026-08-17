@@ -240,47 +240,82 @@
                     <!-- Notification Banner -->
                     <InfoBar x:Name="HistoryInfoBar" Grid.Row="1" IsOpen="False" Severity="Success" Margin="0,0,0,12" />
 
-                    <!-- History List -->
-                    <ListView Grid.Row="2" x:Name="HistoryListView" SelectionMode="None">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Padding="14,10"
-                                        Margin="0,0,0,8">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Spacing="4">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <Border Background="#1A38BDF8" CornerRadius="4" Padding="6,2">
-                                                    <TextBlock Text="{Binding Engine}" FontSize="10" Foreground="#38BDF8" FontWeight="SemiBold" />
+                    <!-- Empty State View -->
+                    <Border x:Name="EmptyHistoryState" Grid.Row="2" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40,0,0">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <FontIcon Glyph="&#xE81C;" FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="No translation history yet" FontSize="15" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="Translations from QuickPopup and Workspace will appear here." FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Static (Non-Collapsible) Date-Grouped History Feed -->
+                    <ScrollViewer x:Name="HistoryScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="HistoryGroupedItemsControl">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,16">
+                                        <!-- Clean Static Date Header with Count Pill -->
+                                        <Grid Margin="2,4,4,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Header}" FontSize="13" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                                                <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="10" Padding="8,2">
+                                                    <TextBlock Text="{Binding CountBadge}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </Border>
-                                                <TextBlock Text="{Binding FormattedTime}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding SourceLang}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
-                                                <TextBlock Text="➔" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding TargetLang}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
-                                            <TextBlock Text="{Binding SourceText}" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-                                            <TextBlock Text="{Binding TranslatedText}" FontSize="14" FontWeight="SemiBold" Foreground="#38BDF8" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                            <Button Tag="{Binding TranslatedText}" Click="HistoryCopy_Click" Padding="8,5" ToolTipService.ToolTip="Copy Translation">
-                                                <FontIcon Glyph="&#xE8C8;" FontSize="11" />
-                                            </Button>
-                                            <Button Tag="{Binding Id}" Click="HistoryDelete_Click" Padding="8,5" ToolTipService.ToolTip="Delete Item">
-                                                <FontIcon Glyph="&#xE74D;" FontSize="11" />
-                                            </Button>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                                            <Rectangle Grid.Column="1" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" Margin="14,0,0,0" />
+                                        </Grid>
+
+                                        <!-- Cards for this date bucket -->
+                                        <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="8"
+                                                            Padding="14,10"
+                                                            Margin="0,0,0,8">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel Grid.Column="0" Spacing="4">
+                                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                    <Border Background="#1A38BDF8" CornerRadius="4" Padding="6,2">
+                                                                        <TextBlock Text="{Binding Engine}" FontSize="10" Foreground="#38BDF8" FontWeight="SemiBold" />
+                                                                    </Border>
+                                                                    <TextBlock Text="{Binding FormattedTime}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                                                                    <TextBlock Text="{Binding SourceLang}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                                                                    <TextBlock Text="➔" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                                                                    <TextBlock Text="{Binding TargetLang}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                                                                </StackPanel>
+                                                                <TextBlock Text="{Binding SourceText}" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                                <TextBlock Text="{Binding TranslatedText}" FontSize="14" FontWeight="SemiBold" Foreground="#38BDF8" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                <Button Tag="{Binding TranslatedText}" Click="HistoryCopy_Click" Padding="8,5" ToolTipService.ToolTip="Copy Translation">
+                                                                    <FontIcon Glyph="&#xE8C8;" FontSize="11" />
+                                                                </Button>
+                                                                <Button Tag="{Binding Id}" Click="HistoryDelete_Click" Padding="8,5" ToolTipService.ToolTip="Delete Item">
+                                                                    <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="#EF4444" />
+                                                                </Button>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </Grid>
 
                 <!-- ═══════════════════════════════════════════════ -->
