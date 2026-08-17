@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -18,6 +19,8 @@ namespace QuickTranslator
         private bool _isPinned = false;
         private string _lastSourceText = string.Empty;
         private bool _isTranslating = false;
+        private POINT _anchorPoint;
+        private bool _hasAnchor = false;
 
         // ── Win32 Interop ──────────────────────────────────────────────────
         [DllImport("user32.dll")]
@@ -38,6 +41,9 @@ namespace QuickTranslator
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 
+        [DllImport("user32.dll")]
+        static extern uint GetDpiForWindow(IntPtr hWnd);
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT { public int X, Y; }
 
@@ -55,6 +61,7 @@ namespace QuickTranslator
 
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         const uint SWP_SHOWWINDOW = 0x0040;
+        const uint SWP_NOACTIVATE = 0x0010;
         const int SW_HIDE = 0;
         const int SW_SHOW = 5;
         const uint MONITOR_DEFAULTTONEAREST = 2;
@@ -80,7 +87,6 @@ namespace QuickTranslator
                 }
             };
 
-            // Set default engine selection in popup
             SyncActiveEngineCombo();
         }
 
@@ -114,80 +120,81 @@ namespace QuickTranslator
             }
         }
 
-        // ── Content-Elastic Dimensions & Screen Clamping ───────────────────
-        private void ApplyElasticSizingAndPosition(string source, string translation)
+        private double GetDpiScale()
+        {
+            if (_hWnd == IntPtr.Zero) return 1.0;
+            uint dpi = GetDpiForWindow(_hWnd);
+            return (dpi > 0) ? (dpi / 96.0) : 1.0;
+        }
+
+        // ── Content-Elastic Dimensions & Screen-Safe Positioning ───────────
+        private void ApplyElasticSizingAndPosition()
         {
             try
             {
                 if (_hWnd == IntPtr.Zero)
                     _hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
 
-                CalculateElasticDimensions(source, translation, out int width, out int height);
+                if (!_hasAnchor)
+                {
+                    GetCursorPos(out _anchorPoint);
+                    _hasAnchor = true;
+                }
 
-                GetCursorPos(out POINT pt);
+                double dpi = GetDpiScale();
 
-                // Query monitor bounds
-                IntPtr hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+                // 1. Determine natural DIP width based on text volume
+                int maxChars = Math.Max(_lastSourceText?.Length ?? 0, TranslatedTextBlock.Text?.Length ?? 0);
+                double dipWidth = 400;
+                if (maxChars > 120) dipWidth = 520;
+                else if (maxChars > 40) dipWidth = 460;
+                else dipWidth = 400;
+
+                // 2. Measure actual XAML layout height accurately
+                PopupRootCard.Width = dipWidth;
+                PopupRootCard.Measure(new Windows.Foundation.Size(dipWidth, double.PositiveInfinity));
+                double dipHeight = Math.Clamp(PopupRootCard.DesiredSize.Height + 16, 155, 420);
+
+                // 3. Convert DIPs to physical device pixels for SetWindowPos
+                int physWidth = (int)Math.Round(dipWidth * dpi);
+                int physHeight = (int)Math.Round(dipHeight * dpi);
+
+                // 4. Query monitor work area bounds (in physical pixels)
+                IntPtr hMonitor = MonitorFromPoint(_anchorPoint, MONITOR_DEFAULTTONEAREST);
                 MONITORINFO mi = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
                 GetMonitorInfo(hMonitor, ref mi);
 
-                int x = pt.X - 30;
-                int y = pt.Y + 20;
+                int x = _anchorPoint.X - (int)(30 * dpi);
+                int y = _anchorPoint.Y + (int)(20 * dpi);
 
-                // Multi-monitor screen boundary clamping
-                if (x + width > mi.rcWork.Right - 12)
-                    x = mi.rcWork.Right - width - 12;
-                if (x < mi.rcWork.Left + 12)
-                    x = mi.rcWork.Left + 12;
+                // Clamp to monitor work area boundaries
+                if (x + physWidth > mi.rcWork.Right - 16)
+                    x = mi.rcWork.Right - physWidth - 16;
+                if (x < mi.rcWork.Left + 16)
+                    x = mi.rcWork.Left + 16;
 
-                if (y + height > mi.rcWork.Bottom - 12)
-                    y = pt.Y - height - 16; // Flip above cursor if bottom edge exceeded
-                if (y < mi.rcWork.Top + 12)
-                    y = mi.rcWork.Top + 12;
+                if (y + physHeight > mi.rcWork.Bottom - 16)
+                    y = _anchorPoint.Y - physHeight - (int)(16 * dpi); // Flip above cursor if bottom edge exceeded
+                if (y < mi.rcWork.Top + 16)
+                    y = mi.rcWork.Top + 16;
 
-                SetWindowPos(_hWnd, HWND_TOPMOST, x, y, width, height, SWP_SHOWWINDOW);
+                SetWindowPos(_hWnd, HWND_TOPMOST, x, y, physWidth, physHeight, SWP_SHOWWINDOW);
                 ShowWindow(_hWnd, SW_SHOW);
                 SetForegroundWindow(_hWnd);
             }
             catch { }
         }
 
-        private void CalculateElasticDimensions(string source, string translation, out int width, out int height)
-        {
-            source ??= string.Empty;
-            translation ??= string.Empty;
-
-            int maxChars = Math.Max(source.Length, translation.Length);
-
-            // Dynamic width scaling based on text length
-            if (maxChars <= 25)
-                width = 370;
-            else if (maxChars <= 80)
-                width = 440;
-            else if (maxChars <= 180)
-                width = 500;
-            else
-                width = 540;
-
-            // Approximate line wrapping counts
-            int charsPerLine = Math.Max(25, (width - 60) / 9);
-            int sourceLines = Math.Max(1, (int)Math.Ceiling((double)source.Length / charsPerLine));
-            int transLines = Math.Max(1, (int)Math.Ceiling((double)translation.Length / charsPerLine));
-
-            // Content heights
-            int sourceHeight = Math.Min(sourceLines * 20, 120);
-            int transHeight = Math.Min(transLines * 26, 170);
-
-            // Base chrome: header (36px) + divider (16px) + footer (38px) + card padding (32px) = ~122px
-            int baseChrome = 122;
-            height = Math.Clamp(baseChrome + sourceHeight + transHeight, 145, 410);
-        }
-
         // ── Main Translation Action ──────────────────────────────────────────
         public async void ShowAndTranslate(string text)
         {
             _lastSourceText = text;
+            _hasAnchor = false; // Capture fresh cursor anchor point
+            GetCursorPos(out _anchorPoint);
+            _hasAnchor = true;
+
             SyncActiveEngineCombo();
+            AutoSelectAppropriateTargetLanguage(text);
 
             SourceTextBlock.Text = text;
             TranslatedTextBlock.Text = "Translating…";
@@ -195,10 +202,30 @@ namespace QuickTranslator
             LoadingRing.Visibility = Visibility.Visible;
             StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x38, 0xBD, 0xF8));
 
-            // Initial elastic fit
-            ApplyElasticSizingAndPosition(text, "Translating…");
+            // Immediate initial display near anchor
+            ApplyElasticSizingAndPosition();
 
             await ReTranslateAsync();
+        }
+
+        private void AutoSelectAppropriateTargetLanguage(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            bool isChinese = Regex.IsMatch(text, @"[\u4e00-\u9fa5]");
+            bool isJapanese = Regex.IsMatch(text, @"[\u3040-\u30ff]");
+            bool isKorean = Regex.IsMatch(text, @"[\uac00-\ud7af]");
+
+            // If input text is Chinese, select English (Index 1)
+            // If input text is English / others, select Chinese (Index 0)
+            if (isChinese || isJapanese || isKorean)
+            {
+                TargetLangCombo.SelectedIndex = 1; // Auto ➔ English
+            }
+            else
+            {
+                TargetLangCombo.SelectedIndex = 0; // Auto ➔ 中文
+            }
         }
 
         private async Task ReTranslateAsync()
@@ -222,9 +249,6 @@ namespace QuickTranslator
                 TranslatedTextBlock.Text = result ?? "No translation available.";
                 TranslateStatusText.Text = $"{engine} Engine · {sw.ElapsedMilliseconds}ms";
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x4A, 0xDE, 0x80));
-
-                // Re-adjust elastic size once final translated text is rendered
-                ApplyElasticSizingAndPosition(_lastSourceText, TranslatedTextBlock.Text);
             }
             catch (Exception ex)
             {
@@ -232,27 +256,28 @@ namespace QuickTranslator
                 TranslatedTextBlock.Text = $"Error: {ex.Message}";
                 TranslateStatusText.Text = $"{engine} Engine · Error";
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0xEF, 0x44, 0x44));
-
-                ApplyElasticSizingAndPosition(_lastSourceText, TranslatedTextBlock.Text);
             }
             finally
             {
                 LoadingRing.IsActive = false;
                 LoadingRing.Visibility = Visibility.Collapsed;
                 _isTranslating = false;
+
+                // Adjust elastic size smoothly at the same anchored location
+                ApplyElasticSizingAndPosition();
             }
         }
 
         // ── Event Handlers ───────────────────────────────────────────────────
         private async void TargetLangCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (this.Content == null) return;
+            if (this.Content == null || _isTranslating) return;
             await ReTranslateAsync();
         }
 
         private async void EngineQuickCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (this.Content == null) return;
+            if (this.Content == null || _isTranslating) return;
             if (EngineQuickCombo.SelectedItem is ComboBoxItem item && item.Tag is string engine)
             {
                 SettingsManager.Current.ActiveEngine = engine;
@@ -316,6 +341,7 @@ namespace QuickTranslator
         {
             try
             {
+                _hasAnchor = false;
                 if (_hWnd == IntPtr.Zero)
                     _hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
                 ShowWindow(_hWnd, SW_HIDE);
