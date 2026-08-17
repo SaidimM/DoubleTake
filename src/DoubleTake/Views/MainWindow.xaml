@@ -19,10 +19,12 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <FontIcon Glyph="&#xE8BD;" FontSize="16" Foreground="#38BDF8" />
+                    <Border Width="22" Height="22" CornerRadius="5" VerticalAlignment="Center">
+                        <Image Source="ms-appx:///Assets/Square44x44Logo.png" Width="22" Height="22" Stretch="UniformToFill" />
+                    </Border>
                     <TextBlock Text="DoubleTake" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    <Border Background="#1A38BDF8" CornerRadius="4" Padding="6,2" Margin="8,0,0,0">
-                        <TextBlock Text="Trigger: Double-tap Ctrl" FontSize="11" Foreground="#38BDF8" />
+                    <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="8,0,0,0">
+                        <TextBlock Text="Trigger: Double-tap Ctrl" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </Border>
                 </StackPanel>
             </Grid>
