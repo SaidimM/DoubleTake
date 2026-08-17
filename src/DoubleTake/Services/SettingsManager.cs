@@ -37,6 +37,7 @@ namespace QuickTranslator
         public bool ShowTrayIcon { get; set; } = true;
         public bool IsHotkeyPaused { get; set; } = false;
         public bool SaveHistoryAcrossSessions { get; set; } = true;
+        public int DoubleTapIntervalMs { get; set; } = 550;
 
         // Gaming / App Exclusion
         public bool DisableInFullscreen { get; set; } = true;

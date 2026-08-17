@@ -22,6 +22,7 @@ namespace QuickTranslator
         private bool _isTranslating = false;
         private POINT _anchorPoint;
         private bool _hasAnchor = false;
+        private DateTime _lastShownTime = DateTime.MinValue;
 
         public event Action<string, string, string> OnOpenInWorkspaceRequested;
 
@@ -95,6 +96,10 @@ namespace QuickTranslator
                 {
                     if (!_isPinned)
                     {
+                        // Ignore immediate deactivation within 750ms of display
+                        if ((DateTime.UtcNow - _lastShownTime).TotalMilliseconds < 750)
+                            return;
+
                         HidePopup();
                     }
                 }
@@ -235,6 +240,7 @@ namespace QuickTranslator
         // ── Main Translation Action ──────────────────────────────────────────
         public async void ShowAndTranslate(string text)
         {
+            _lastShownTime = DateTime.UtcNow;
             _lastSourceText = text;
             _hasAnchor = false; // Capture fresh cursor anchor point
             GetCursorPos(out _anchorPoint);

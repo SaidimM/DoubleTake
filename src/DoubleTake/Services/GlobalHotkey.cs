@@ -75,7 +75,8 @@ namespace QuickTranslator
                     {
                         var now = DateTime.UtcNow;
                         double elapsed = (now - _lastCtrlPressTime).TotalMilliseconds;
-                        if (elapsed >= 50 && elapsed <= 650)
+                        int maxSpeed = SettingsManager.Current?.DoubleTapIntervalMs ?? 550;
+                        if (elapsed >= 15 && elapsed <= Math.Max(700, maxSpeed + 100))
                         {
                             _lastCtrlPressTime = DateTime.MinValue;
                             DoubleCtrlPressed?.Invoke(null, EventArgs.Empty);
