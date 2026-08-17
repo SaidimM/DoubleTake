@@ -35,11 +35,18 @@ namespace QuickTranslator
             targetLang ??= config.DefaultTargetLang;
             sourceLang ??= config.DefaultSourceLang;
 
+            // ── Smart Bi-Directional Auto-Switching ──
+            if (config.SmartBiDirectional)
+            {
+                targetLang = ResolveBiDirectionalTarget(text, targetLang, config.SecondaryTargetLang);
+            }
+
             string primaryEngine = config.ActiveEngine;
             var primaryResult = await ExecuteEngineAsync(primaryEngine, text, targetLang, sourceLang);
 
             if (primaryResult.Success && !string.IsNullOrWhiteSpace(primaryResult.TranslatedText))
             {
+                HistoryService.AddEntry(text, primaryResult.TranslatedText, targetLang, primaryResult.EngineUsed, sourceLang);
                 return primaryResult.TranslatedText;
             }
 
@@ -49,6 +56,7 @@ namespace QuickTranslator
                 var fallbackResult = await ExecuteEngineAsync(config.FallbackEngine, text, targetLang, sourceLang);
                 if (fallbackResult.Success && !string.IsNullOrWhiteSpace(fallbackResult.TranslatedText))
                 {
+                    HistoryService.AddEntry(text, fallbackResult.TranslatedText, targetLang, fallbackResult.EngineUsed, sourceLang);
                     return fallbackResult.TranslatedText;
                 }
             }
@@ -57,10 +65,49 @@ namespace QuickTranslator
             if (primaryEngine != "Google")
             {
                 var googleFallback = await ExecuteGoogleAsync(text, targetLang, sourceLang);
-                if (googleFallback.Success) return googleFallback.TranslatedText;
+                if (googleFallback.Success)
+                {
+                    HistoryService.AddEntry(text, googleFallback.TranslatedText, targetLang, "Google", sourceLang);
+                    return googleFallback.TranslatedText;
+                }
             }
 
             return primaryResult.ErrorMessage ?? "Translation failed.";
+        }
+
+        private static string ResolveBiDirectionalTarget(string text, string currentTarget, string secondaryTarget)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return currentTarget;
+
+            bool containsChinese = System.Text.RegularExpressions.Regex.IsMatch(text, @"[\u4e00-\u9fa5]");
+            bool containsJapanese = System.Text.RegularExpressions.Regex.IsMatch(text, @"[\u3040-\u30ff]");
+            bool containsKorean = System.Text.RegularExpressions.Regex.IsMatch(text, @"[\uac00-\ud7af]");
+
+            // If target is Chinese but text is already Chinese -> translate to English / secondary
+            if (currentTarget.StartsWith("zh", StringComparison.OrdinalIgnoreCase) && containsChinese)
+            {
+                return string.IsNullOrWhiteSpace(secondaryTarget) ? "en" : secondaryTarget;
+            }
+
+            // If target is Japanese but text is Japanese -> translate to English
+            if (currentTarget.StartsWith("ja", StringComparison.OrdinalIgnoreCase) && containsJapanese)
+            {
+                return "en";
+            }
+
+            // If target is Korean but text is Korean -> translate to English
+            if (currentTarget.StartsWith("ko", StringComparison.OrdinalIgnoreCase) && containsKorean)
+            {
+                return "en";
+            }
+
+            // If target is English and text is purely English / Latin without CJK -> translate to Chinese / primary
+            if (currentTarget.StartsWith("en", StringComparison.OrdinalIgnoreCase) && !containsChinese && !containsJapanese && !containsKorean)
+            {
+                return "zh-CN";
+            }
+
+            return currentTarget;
         }
 
         public async Task<TranslationResult> TestProviderAsync(string engine)

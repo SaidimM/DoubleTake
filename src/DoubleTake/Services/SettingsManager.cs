@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using Windows.Security.Credentials;
@@ -13,15 +14,30 @@ namespace QuickTranslator
         public int SpeedWindowMs { get; set; } = 550;
         public string DefaultSourceLang { get; set; } = "auto";
         public string DefaultTargetLang { get; set; } = "zh-CN";
+        public string SecondaryTargetLang { get; set; } = "en";
+        public bool SmartBiDirectional { get; set; } = true;
+
         public string PopupPosition { get; set; } = "Near Cursor";
         public bool AutoDismiss { get; set; } = false;
         public bool LaunchAtStartup { get; set; } = true;
         public bool ShowTrayIcon { get; set; } = true;
+        public bool IsHotkeyPaused { get; set; } = false;
+
+        // Gaming / App Exclusion
+        public bool DisableInFullscreen { get; set; } = true;
+        public List<string> ExcludedProcesses { get; set; } = new List<string>
+        {
+            "cs2.exe",
+            "VALORANT-Win64-Shipping.exe",
+            "LeagueClient.exe",
+            "Overwatch.exe",
+            "dota2.exe"
+        };
 
         // DeepL
         public bool DeepLIsPro { get; set; } = false;
 
-        // In-memory key caching (hydrated from PasswordVault / local secure storage)
+        // In-memory key caching (hydrated from PasswordVault)
         public string DeepLApiKey { get; set; } = string.Empty;
         public string BaiduAppId { get; set; } = string.Empty;
         public string BaiduSecretKey { get; set; } = string.Empty;
@@ -86,7 +102,6 @@ namespace QuickTranslator
             try
             {
                 Directory.CreateDirectory(ConfigFolder);
-                // Serialize non-sensitive configuration
                 var clone = new AppSettings
                 {
                     ActiveEngine = _current.ActiveEngine,
@@ -95,10 +110,15 @@ namespace QuickTranslator
                     SpeedWindowMs = _current.SpeedWindowMs,
                     DefaultSourceLang = _current.DefaultSourceLang,
                     DefaultTargetLang = _current.DefaultTargetLang,
+                    SecondaryTargetLang = _current.SecondaryTargetLang,
+                    SmartBiDirectional = _current.SmartBiDirectional,
                     PopupPosition = _current.PopupPosition,
                     AutoDismiss = _current.AutoDismiss,
                     LaunchAtStartup = _current.LaunchAtStartup,
                     ShowTrayIcon = _current.ShowTrayIcon,
+                    IsHotkeyPaused = _current.IsHotkeyPaused,
+                    DisableInFullscreen = _current.DisableInFullscreen,
+                    ExcludedProcesses = _current.ExcludedProcesses ?? new List<string>(),
                     DeepLIsPro = _current.DeepLIsPro
                 };
 

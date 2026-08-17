@@ -5,7 +5,7 @@ namespace QuickTranslator
 {
     public partial class App : Application
     {
-        private Window m_window;
+        private MainWindow m_window;
         private QuickPopup m_popup;
 
         public App()
@@ -13,7 +13,7 @@ namespace QuickTranslator
             this.InitializeComponent();
             this.UnhandledException += (s, e) =>
             {
-                try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\QuickTranslator\crash.log", e.Exception.ToString()); }
+                try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\DoubleTake\crash.log", e.Exception.ToString()); }
                 catch { }
                 e.Handled = true;
             };
@@ -26,7 +26,32 @@ namespace QuickTranslator
                 m_window = new MainWindow();
                 m_window.Activate();
 
-                // Pre-create the popup overlay once (avoids cold-start delay)
+                // Setup Tray Service
+                var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(m_window);
+                TrayService.Initialize(hWnd);
+                TrayService.OnOpenRequested += () =>
+                {
+                    m_window.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        m_window.ShowAndActivate();
+                    });
+                };
+                TrayService.OnHistoryRequested += () =>
+                {
+                    m_window.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        m_window.NavigateToHistory();
+                        m_window.ShowAndActivate();
+                    });
+                };
+                TrayService.OnExitRequested += () =>
+                {
+                    TrayService.RemoveTrayIcon();
+                    GlobalHotkey.Stop();
+                    this.Exit();
+                };
+
+                // Pre-create popup
                 m_popup = new QuickPopup();
 
                 GlobalHotkey.DoubleCtrlPressed += OnDoubleCtrl;
@@ -34,16 +59,19 @@ namespace QuickTranslator
             }
             catch (Exception ex)
             {
-                try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\QuickTranslator\crash.log", ex.ToString()); }
+                try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\DoubleTake\crash.log", ex.ToString()); }
                 catch { }
             }
         }
 
         // ════════════════════════════════════════════════════════════════════
-        // Double Ctrl → Translate selected text
+        // Double Ctrl → Translate selected text (with Game/Exclusion check)
         // ════════════════════════════════════════════════════════════════════
         private void OnDoubleCtrl(object sender, EventArgs e)
         {
+            // Check if active app or game is blacklisted / fullscreen
+            if (ExclusionService.IsActiveAppExcluded()) return;
+
             if (m_window == null) return;
             m_window.DispatcherQueue.TryEnqueue(async () =>
             {
@@ -57,7 +85,7 @@ namespace QuickTranslator
                 }
                 catch (Exception ex)
                 {
-                    try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\QuickTranslator\crash.log", ex.ToString()); } catch { }
+                    try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\DoubleTake\crash.log", ex.ToString()); } catch { }
                 }
             });
         }

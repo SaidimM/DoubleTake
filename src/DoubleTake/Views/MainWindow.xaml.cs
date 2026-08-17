@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -13,6 +17,7 @@ namespace QuickTranslator
         private readonly TranslationService _translator;
         private QuickPopup _popup;
         private bool _isInitializing = true;
+        private ObservableCollection<string> _blacklistProcesses = new ObservableCollection<string>();
 
         public MainWindow()
         {
@@ -21,14 +26,47 @@ namespace QuickTranslator
             this.SystemBackdrop = new MicaBackdrop();
             this.ExtendsContentIntoTitleBar = true;
 
+            // Setup minimize to tray on closing
+            this.AppWindow.Closing += (s, e) =>
+            {
+                if (MinimizeToTrayToggle.IsOn)
+                {
+                    e.Cancel = true;
+                    this.AppWindow.Hide();
+                }
+            };
+
             LoadSettingsIntoUI();
+            RefreshHistoryView();
         }
 
-        private void LoadSettingsIntoUI()
+        public void ShowAndActivate()
+        {
+            this.AppWindow.Show();
+            this.Activate();
+        }
+
+        public void NavigateToHistory()
+        {
+            foreach (var item in NavView.MenuItems)
+            {
+                if (item is NavigationViewItem navItem && navItem.Tag as string == "History")
+                {
+                    NavView.SelectedItem = navItem;
+                    break;
+                }
+            }
+            TranslateView.Visibility = Visibility.Collapsed;
+            SettingsView.Visibility = Visibility.Collapsed;
+            HistoryView.Visibility = Visibility.Visible;
+            RefreshHistoryView();
+        }
+
+        private async void LoadSettingsIntoUI()
         {
             var config = SettingsManager.Current;
 
-            // Set Active Engine ComboBox
+            // Engine Selector
             for (int i = 0; i < EngineSelectorCombo.Items.Count; i++)
             {
                 if (EngineSelectorCombo.Items[i] is ComboBoxItem item && item.Tag as string == config.ActiveEngine)
@@ -55,7 +93,16 @@ namespace QuickTranslator
 
             AutoFallbackToggle.IsOn = config.AutoFallback;
             SpeedSlider.Value = config.SpeedWindowMs;
-            StartupToggle.IsOn = config.LaunchAtStartup;
+            SmartBiDirectionalToggle.IsOn = config.SmartBiDirectional;
+            FullscreenExclusionToggle.IsOn = config.DisableInFullscreen;
+
+            // Startup state
+            bool isStartup = await StartupService.IsStartupEnabledAsync();
+            StartupToggle.IsOn = isStartup;
+
+            // Blacklist
+            _blacklistProcesses = new ObservableCollection<string>(config.ExcludedProcesses ?? new List<string>());
+            BlacklistItemsControl.ItemsSource = _blacklistProcesses;
 
             UpdateEngineDrawer(config.ActiveEngine);
             UpdateProviderStatusBadge(config.ActiveEngine);
@@ -80,8 +127,151 @@ namespace QuickTranslator
             TranslateView.Visibility = tag == "Translate" ? Visibility.Visible : Visibility.Collapsed;
             HistoryView.Visibility = tag == "History" ? Visibility.Visible : Visibility.Collapsed;
             SettingsView.Visibility = Visibility.Collapsed;
+
+            if (tag == "History")
+            {
+                RefreshHistoryView();
+            }
         }
 
+        // ── History Screen Logic ─────────────────────────────────────────────
+        private void RefreshHistoryView(string query = null)
+        {
+            var items = string.IsNullOrWhiteSpace(query) ? HistoryService.GetAll() : HistoryService.Search(query);
+            HistoryListView.ItemsSource = items;
+        }
+
+        private void HistorySearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            RefreshHistoryView(HistorySearchBox.Text);
+        }
+
+        private void HistoryCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string text)
+            {
+                var pkg = new DataPackage();
+                pkg.SetText(text);
+                Clipboard.SetContent(pkg);
+            }
+        }
+
+        private void HistoryDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string id)
+            {
+                HistoryService.DeleteEntry(id);
+                RefreshHistoryView(HistorySearchBox.Text);
+            }
+        }
+
+        private void ClearHistory_Click(object sender, RoutedEventArgs e)
+        {
+            HistoryService.ClearAll();
+            RefreshHistoryView();
+        }
+
+        private void ExportCsvButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string csv = HistoryService.ExportToCsv();
+                string downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                string file = Path.Combine(downloads, $"DoubleTake_History_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                File.WriteAllText(file, csv, System.Text.Encoding.UTF8);
+
+                HistoryInfoBar.Title = "CSV Exported Successfully!";
+                HistoryInfoBar.Message = $"Saved to: {file}";
+                HistoryInfoBar.IsOpen = true;
+            }
+            catch (Exception ex)
+            {
+                HistoryInfoBar.Title = "Export Failed";
+                HistoryInfoBar.Message = ex.Message;
+                HistoryInfoBar.Severity = InfoBarSeverity.Error;
+                HistoryInfoBar.IsOpen = true;
+            }
+        }
+
+        private void ExportMdButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string md = HistoryService.ExportToMarkdown();
+                string downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                string file = Path.Combine(downloads, $"DoubleTake_History_{DateTime.Now:yyyyMMdd_HHmmss}.md");
+                File.WriteAllText(file, md, System.Text.Encoding.UTF8);
+
+                HistoryInfoBar.Title = "Markdown Exported Successfully!";
+                HistoryInfoBar.Message = $"Saved to: {file}";
+                HistoryInfoBar.IsOpen = true;
+            }
+            catch (Exception ex)
+            {
+                HistoryInfoBar.Title = "Export Failed";
+                HistoryInfoBar.Message = ex.Message;
+                HistoryInfoBar.Severity = InfoBarSeverity.Error;
+                HistoryInfoBar.IsOpen = true;
+            }
+        }
+
+        // ── Blacklist / Exclusion Logic ──────────────────────────────────────
+        private void AddBlacklistProcess_Click(object sender, RoutedEventArgs e)
+        {
+            string name = NewBlacklistProcessInput.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(name)) return;
+
+            if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                name += ".exe";
+
+            if (!_blacklistProcesses.Contains(name, StringComparer.OrdinalIgnoreCase))
+            {
+                _blacklistProcesses.Add(name);
+                SettingsManager.Current.ExcludedProcesses = _blacklistProcesses.ToList();
+                SettingsManager.SaveSettings();
+            }
+            NewBlacklistProcessInput.Text = string.Empty;
+        }
+
+        private void RemoveBlacklistProcess_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string name)
+            {
+                _blacklistProcesses.Remove(name);
+                SettingsManager.Current.ExcludedProcesses = _blacklistProcesses.ToList();
+                SettingsManager.SaveSettings();
+            }
+        }
+
+        private void FullscreenExclusionToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitializing)
+            {
+                SettingsManager.Current.DisableInFullscreen = FullscreenExclusionToggle.IsOn;
+                SettingsManager.SaveSettings();
+            }
+        }
+
+        private void SmartBiDirectionalToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitializing)
+            {
+                SettingsManager.Current.SmartBiDirectional = SmartBiDirectionalToggle.IsOn;
+                SettingsManager.SaveSettings();
+            }
+        }
+
+        private async void StartupToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitializing)
+            {
+                bool success = await StartupService.SetStartupAsync(StartupToggle.IsOn);
+                SettingsManager.Current.LaunchAtStartup = StartupToggle.IsOn;
+                SettingsManager.SaveSettings();
+            }
+        }
+
+        // ── Provider Drawer Logic ────────────────────────────────────────────
         private void EngineSelectorCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (EngineSelectorCombo.SelectedItem is ComboBoxItem item && item.Tag is string engine)
@@ -242,24 +432,6 @@ namespace QuickTranslator
             }
         }
 
-        private void PopupPositionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!_isInitializing && PopupPositionCombo.SelectedItem is ComboBoxItem item)
-            {
-                SettingsManager.Current.PopupPosition = item.Content as string;
-                SettingsManager.SaveSettings();
-            }
-        }
-
-        private void StartupToggle_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (!_isInitializing)
-            {
-                SettingsManager.Current.LaunchAtStartup = StartupToggle.IsOn;
-                SettingsManager.SaveSettings();
-            }
-        }
-
         // ── Main Translation Screen Handlers ──────────────────────────────────
         private async void TranslateButton_Click(object sender, RoutedEventArgs e)
         {
@@ -277,13 +449,6 @@ namespace QuickTranslator
 
                 string result = await _translator.TranslateAsync(source, targetLang, sourceLang);
                 TargetTextBox.Text = result;
-
-                var historyItem = new TextBlock
-                {
-                    Text = $"[{SettingsManager.Current.ActiveEngine}] {source} ➔ {result} ({DateTime.Now:t})",
-                    Margin = new Thickness(0, 4, 0, 4)
-                };
-                HistoryListView.Items.Insert(0, historyItem);
             }
             catch (Exception ex)
             {
@@ -344,11 +509,6 @@ namespace QuickTranslator
         {
             _popup ??= new QuickPopup();
             _popup.ShowAndTranslate("Hello! This is a test of DoubleTake quick translation popup.");
-        }
-
-        private void ClearHistory_Click(object sender, RoutedEventArgs e)
-        {
-            HistoryListView.Items.Clear();
         }
     }
 }
