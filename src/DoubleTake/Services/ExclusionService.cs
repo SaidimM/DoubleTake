@@ -26,6 +26,9 @@ namespace QuickTranslator
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
         {
@@ -44,6 +47,19 @@ namespace QuickTranslator
         }
 
         private const uint MONITOR_DEFAULTTONEAREST = 2;
+        private const int GWL_STYLE = -16;
+        private const uint WS_MAXIMIZE = 0x01000000;
+        private const uint WS_CAPTION = 0x00C00000;
+
+        // Known IDE and developer tools that should NEVER be treated as fullscreen games
+        private static readonly string[] NonGameProcessNames = new[]
+        {
+            "idea64", "idea", "pycharm64", "pycharm", "webstorm64", "webstorm",
+            "rider64", "rider", "clion64", "clion", "goland64", "goland",
+            "datagrip64", "datagrip", "rubymine64", "rubymine", "phpstorm64", "phpstorm",
+            "studio64", "code", "devenv", "sublime_text", "notepad++", "windowsterminal",
+            "wt", "cmd", "powershell", "pwsh", "alacritty", "wezterm", "chrome", "msedge", "firefox"
+        };
 
         public static bool IsActiveAppExcluded()
         {
@@ -53,6 +69,8 @@ namespace QuickTranslator
             IntPtr hWnd = GetForegroundWindow();
             if (hWnd == IntPtr.Zero) return false;
 
+            string procName = string.Empty;
+
             // 1. Check Process Name Exclusion
             try
             {
@@ -60,7 +78,7 @@ namespace QuickTranslator
                 if (pid != 0)
                 {
                     using var proc = Process.GetProcessById((int)pid);
-                    string procName = proc.ProcessName; // e.g. "cs2", "VALORANT-Win64-Shipping"
+                    procName = proc.ProcessName; // e.g. "cs2", "idea64"
                     string fullExe = procName + ".exe";
 
                     if (config.ExcludedProcesses != null && config.ExcludedProcesses.Any(x =>
@@ -79,25 +97,34 @@ namespace QuickTranslator
             }
             catch { }
 
-            // 2. Check Fullscreen Mode (if enabled)
+            // 2. Check Fullscreen Game Mode (if enabled)
             if (config.DisableInFullscreen)
             {
-                if (IsWindowFullscreen(hWnd))
+                if (IsWindowFullscreenGame(hWnd, procName))
                     return true;
             }
 
             return false;
         }
 
-        private static bool IsWindowFullscreen(IntPtr hWnd)
+        private static bool IsWindowFullscreenGame(IntPtr hWnd, string procName)
         {
             try
             {
-                // Exclude desktop / shell tray windows
+                // Never treat developer tools, IDEs, browsers, or shell windows as fullscreen games
+                if (!string.IsNullOrEmpty(procName) && NonGameProcessNames.Contains(procName, StringComparer.OrdinalIgnoreCase))
+                    return false;
+
                 var sb = new StringBuilder(256);
                 GetClassName(hWnd, sb, 256);
                 string className = sb.ToString();
-                if (className == "Progman" || className == "WorkerW" || className == "Shell_TrayWnd")
+                if (className == "Progman" || className == "WorkerW" || className == "Shell_TrayWnd" || className == "ApplicationFrameWindow")
+                    return false;
+
+                int style = GetWindowLong(hWnd, GWL_STYLE);
+                
+                // If it is a standard maximized desktop window with caption / system titlebar, it's not a fullscreen game
+                if ((style & WS_MAXIMIZE) != 0 || (style & WS_CAPTION) == WS_CAPTION)
                     return false;
 
                 if (!GetWindowRect(hWnd, out RECT rect)) return false;
@@ -106,7 +133,7 @@ namespace QuickTranslator
                 MONITORINFO mi = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
                 if (!GetMonitorInfo(hMonitor, ref mi)) return false;
 
-                // If window covers the full monitor area
+                // Only true if borderless/exclusive fullscreen game covering entire monitor without standard caption
                 return rect.Left <= mi.rcMonitor.Left &&
                        rect.Top <= mi.rcMonitor.Top &&
                        rect.Right >= mi.rcMonitor.Right &&
