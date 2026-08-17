@@ -362,14 +362,18 @@
                 </Grid>
 
                 <!-- ═══════════════════════════════════════════════ -->
-                <!-- 3. SETTINGS & CONFIGURATION SCREEN              -->
+                <!-- 3. SETTINGS & CONFIGURATION SCREEN (FLUENT 2)   -->
                 <!-- ═══════════════════════════════════════════════ -->
                 <ScrollViewer x:Name="SettingsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="20" Padding="0,0,0,32">
+                    <StackPanel Spacing="24" Padding="0,0,0,40" MaxWidth="820" HorizontalAlignment="Left">
 
-                        <TextBlock Text="Settings &amp; Preferences" FontSize="22" FontWeight="Bold" Margin="0,4,0,4" />
+                        <!-- Header -->
+                        <StackPanel Spacing="4" Margin="0,4,0,0">
+                            <TextBlock Text="Settings &amp; Preferences" FontSize="22" FontWeight="Bold" />
+                            <TextBlock Text="Manage translation providers, hotkeys, gaming blacklist, and desktop behavior" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
 
-                        <!-- ── SECTION A: 7-ENGINE TRANSLATION PROVIDER DRAWER ── -->
+                        <!-- ── 1. TRANSLATION ENGINES & CREDENTIAL VAULT ── -->
                         <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 BorderThickness="1" CornerRadius="8" Padding="20">
@@ -379,16 +383,16 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="Translation Engines &amp; API Keys" FontWeight="SemiBold" FontSize="15" />
-                                        <TextBlock Text="Configure and test credentials for 7 global &amp; regional translation providers" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Translation Providers &amp; Vault" FontWeight="SemiBold" FontSize="15" />
+                                        <TextBlock Text="API keys are encrypted and auto-saved directly into Windows PasswordVault" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                     <Border Grid.Column="1" x:Name="ProviderStatusBadge" Background="#1A4ADE80" CornerRadius="4" Padding="8,3" VerticalAlignment="Center">
                                         <TextBlock x:Name="ProviderStatusBadgeText" Text="✓ Ready (Built-in)" FontSize="11" Foreground="#4ADE80" FontWeight="SemiBold" />
                                     </Border>
                                 </Grid>
 
-                                <!-- Engine Selector -->
+                                <!-- Active Provider Dropdown -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -406,22 +410,22 @@
                                     </ComboBox>
                                 </Grid>
 
-                                <!-- Dynamic Credential Panels -->
+                                <!-- Dynamic Credential Drawer -->
                                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                         BorderThickness="1" CornerRadius="6" Padding="16">
-                                    <StackPanel Spacing="12">
+                                    <StackPanel Spacing="14">
 
                                         <!-- Panel: Google -->
                                         <StackPanel x:Name="GoogleConfigPanel" Visibility="Visible" Spacing="6">
                                             <TextBlock Text="Google Translate (Built-in)" FontWeight="SemiBold" FontSize="13" Foreground="#38BDF8" />
-                                            <TextBlock Text="✓ Ready to use. Powered by Google public neural translation. No API keys required." FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="✓ Ready to use out of the box. Powered by Google neural translation network. No API key needed." FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                         </StackPanel>
 
                                         <!-- Panel: Bing -->
                                         <StackPanel x:Name="BingConfigPanel" Visibility="Collapsed" Spacing="6">
                                             <TextBlock Text="Bing / Edge Translator (Built-in)" FontWeight="SemiBold" FontSize="13" Foreground="#38BDF8" />
-                                            <TextBlock Text="✓ Ready to use. Powered by Microsoft Edge translation engine. Fast and reliable globally." FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="✓ Ready to use out of the box. Powered by Microsoft Edge neural translation engine. Fast and reliable." FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                         </StackPanel>
 
                                         <!-- Panel: DeepL -->
@@ -435,7 +439,7 @@
                                                 <HyperlinkButton Grid.Column="1" Content="Get DeepL API Key ↗" NavigateUri="https://www.deepl.com/pro-api" Padding="0" FontSize="11" />
                                             </Grid>
                                             <StackPanel Spacing="4">
-                                                <TextBlock Text="Authentication Key" FontSize="12" />
+                                                <TextBlock Text="Authentication Key (Auto-saved)" FontSize="12" />
                                                 <PasswordBox x:Name="DeepLApiKeyInput" PlaceholderText="Paste your DeepL API key" PasswordChanged="OnKeyInputChanged" />
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Spacing="16">
@@ -541,13 +545,12 @@
                                             </Grid>
                                         </StackPanel>
 
-                                        <!-- Action Bar -->
-                                        <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" Margin="0,4" />
+                                        <!-- Connection Test Bar (Live Latency & Health Check) -->
+                                        <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" Margin="0,2" />
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" x:Name="TestConnectionButton" Click="TestConnectionButton_Click" Padding="14,6">
                                                 <StackPanel Orientation="Horizontal" Spacing="6">
@@ -559,167 +562,185 @@
                                                 <ProgressRing x:Name="TestProgressRing" Width="14" Height="14" IsActive="False" Visibility="Collapsed" />
                                                 <TextBlock x:Name="TestResultStatusText" Text="Click Test to verify connection and check latency." FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                             </StackPanel>
-                                            <Button Grid.Column="2" x:Name="SaveKeysButton" Content="Save Keys" Click="SaveKeysButton_Click" Background="#2563EB" Foreground="White" Padding="16,6" />
                                         </Grid>
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Auto Fallback -->
-                                <Grid Margin="0,4,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock Text="Smart Auto-Fallback on Rate Limit / Error" FontSize="13" />
-                                        <TextBlock Text="If primary API fails (e.g. quota limit 429), silently fallback to Google / Bing" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-                                    <ToggleSwitch x:Name="AutoFallbackToggle" Grid.Column="1" IsOn="True" Toggled="AutoFallbackToggle_Toggled" Margin="12,0,0,0" />
-                                </Grid>
-                            </StackPanel>
-                        </Border>
+                                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
-                        <!-- ── SECTION B: TRIGGER & SMART TRANSLATION + GAMING EXCLUSION ── -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="16" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Card 1: Trigger & Smart Bi-directional -->
-                            <Border Grid.Column="0" Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                    BorderThickness="1" CornerRadius="8" Padding="20">
-                                <StackPanel Spacing="14">
-                                    <TextBlock Text="Trigger &amp; Smart Translation" FontWeight="SemiBold" FontSize="14" />
-
-                                    <!-- Double-tap Ctrl -->
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Spacing="2">
-                                            <TextBlock Text="Double-tap Ctrl Shortcut" FontSize="13" />
-                                            <TextBlock Text="Tap Ctrl key twice quickly to trigger popup" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                        </StackPanel>
-                                        <ToggleSwitch x:Name="HotkeyCtrlToggle" Grid.Column="1" IsOn="True" />
-                                    </Grid>
-
-                                    <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
-
-                                    <!-- Speed Window -->
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="Double-tap Speed Window" FontSize="13" />
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Fast (300ms)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                            <Slider Grid.Column="1" x:Name="SpeedSlider" Minimum="300" Maximum="750" Value="550" ValueChanged="SpeedSlider_ValueChanged" />
-                                            <TextBlock Grid.Column="2" Text="Slow (750ms)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
-                                        </Grid>
-                                    </StackPanel>
-
-                                    <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
-
-                                    <!-- Smart Bi-directional -->
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Spacing="2">
-                                            <TextBlock Text="Smart Bi-directional Auto-Switch" FontSize="13" />
-                                            <TextBlock Text="Automatically inverts language (e.g. English ➔ Chinese, Chinese ➔ English)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                        <ToggleSwitch x:Name="SmartBiDirectionalToggle" Grid.Column="1" IsOn="True" Toggled="SmartBiDirectionalToggle_Toggled" />
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Card 2: Gaming & App Exclusion List (Blacklist) -->
-                            <Border Grid.Column="2" Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                    BorderThickness="1" CornerRadius="8" Padding="20">
-                                <StackPanel Spacing="14">
-                                    <TextBlock Text="Gaming &amp; App Exclusion Blacklist" FontWeight="SemiBold" FontSize="14" />
-
-                                    <!-- Fullscreen detection -->
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Spacing="2">
-                                            <TextBlock Text="Disable in Fullscreen Games" FontSize="13" />
-                                            <TextBlock Text="Prevents accidental popups in games using Ctrl" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                        </StackPanel>
-                                        <ToggleSwitch x:Name="FullscreenExclusionToggle" Grid.Column="1" IsOn="True" Toggled="FullscreenExclusionToggle_Toggled" />
-                                    </Grid>
-
-                                    <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
-
-                                    <!-- Excluded Process Box -->
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="Blacklisted Application Executables" FontSize="13" />
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox x:Name="NewBlacklistProcessInput" PlaceholderText="e.g. game.exe or terminal.exe" Grid.Column="0" Margin="0,0,8,0" />
-                                            <Button Grid.Column="1" Content="Add" Click="AddBlacklistProcess_Click" />
-                                        </Grid>
-                                        <ScrollViewer MaxHeight="85" VerticalScrollBarVisibility="Auto" Margin="0,4,0,0">
-                                            <ItemsControl x:Name="BlacklistItemsControl">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="4" Padding="8,4" Margin="0,2">
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="*" />
-                                                                    <ColumnDefinition Width="Auto" />
-                                                                </Grid.ColumnDefinitions>
-                                                                <TextBlock Text="{Binding}" FontSize="12" VerticalAlignment="Center" />
-                                                                <Button Grid.Column="1" Tag="{Binding}" Click="RemoveBlacklistProcess_Click" Padding="4,2" Background="Transparent" BorderThickness="0">
-                                                                    <FontIcon Glyph="&#xE711;" FontSize="10" />
-                                                                </Button>
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-
-                        <!-- ── SECTION C: SYSTEM STARTUP & BEHAVIOR ── -->
-                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                BorderThickness="1" CornerRadius="8" Padding="20">
-                            <StackPanel Spacing="14">
-                                <TextBlock Text="System &amp; Desktop Behavior" FontWeight="SemiBold" FontSize="14" />
-
+                                <!-- Smart Auto-Fallback Toggle -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock Text="Launch at Windows startup" FontSize="13" />
-                                        <TextBlock Text="Start DoubleTake silently in system tray on boot" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="Smart Auto-Fallback on Rate Limit / Error" FontSize="13" />
+                                        <TextBlock Text="If primary API fails (e.g. quota limit 429), silently fallback to Google or Bing" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="AutoFallbackToggle" Grid.Column="1" IsOn="True" Toggled="AutoFallbackToggle_Toggled" Margin="12,0,0,0" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── 2. HOTKEY & TRIGGER SENSITIVITY ── -->
+                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="20">
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="Hotkey &amp; Trigger Sensitivity" FontWeight="SemiBold" FontSize="15" />
+
+                                <!-- Double-tap Ctrl Toggle -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Double-tap Ctrl Trigger" FontSize="13" />
+                                        <TextBlock Text="Tap Ctrl key twice quickly to pop up DoubleTake on highlighted text" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="HotkeyCtrlToggle" Grid.Column="1" IsOn="True" />
+                                </Grid>
+
+                                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                                <!-- Speed Slider with Live Badge -->
+                                <StackPanel Spacing="8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Text="Double-tap Speed Window" FontSize="13" />
+                                            <TextBlock Text="Maximum interval allowed between the two Ctrl keypresses" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Background="#1A38BDF8" CornerRadius="4" Padding="8,2" VerticalAlignment="Center">
+                                            <TextBlock x:Name="SpeedValueText" Text="550 ms" FontSize="12" FontWeight="SemiBold" Foreground="#38BDF8" />
+                                        </Border>
+                                    </Grid>
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="300 ms (Fast)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                        <Slider Grid.Column="1" x:Name="SpeedSlider" Minimum="300" Maximum="750" Value="550" ValueChanged="SpeedSlider_ValueChanged" />
+                                        <TextBlock Grid.Column="2" Text="750 ms (Relaxed)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                    </Grid>
+                                </StackPanel>
+
+                                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                                <!-- Smart Bi-directional Auto-Switch -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Smart Bi-directional Language Switching" FontSize="13" />
+                                        <TextBlock Text="Automatically inverts target language (English ➔ Chinese, Chinese/Japanese/Korean ➔ English)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="SmartBiDirectionalToggle" Grid.Column="1" IsOn="True" Toggled="SmartBiDirectionalToggle_Toggled" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── 3. GAMING & PROCESS BLACKLIST ── -->
+                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="20">
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="Gaming &amp; Process Blacklist" FontWeight="SemiBold" FontSize="15" />
+
+                                <!-- Fullscreen Games Detection -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Suppress in Fullscreen Games" FontSize="13" />
+                                        <TextBlock Text="Automatically disables hotkey when full-screen 3D games (DirectX/Vulkan) are focused" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="FullscreenExclusionToggle" Grid.Column="1" IsOn="True" Toggled="FullscreenExclusionToggle_Toggled" />
+                                </Grid>
+
+                                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                                <!-- Excluded Application Executables -->
+                                <StackPanel Spacing="10">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="Excluded Application Executables" FontSize="13" />
+                                        <TextBlock Text="DoubleTake hotkey will remain completely silent inside these processes" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <!-- Add New Executable Input -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="NewBlacklistProcessInput" PlaceholderText="e.g. cs2.exe, valorant.exe, or terminal.exe" Grid.Column="0" Margin="0,0,8,0" />
+                                        <Button Grid.Column="1" Content="Add Process" Click="AddBlacklistProcess_Click" />
+                                    </Grid>
+
+                                    <!-- Process Chip List -->
+                                    <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl x:Name="BlacklistItemsControl">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="4" Padding="10,6" Margin="0,2">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <FontIcon Grid.Column="0" Glyph="&#xE756;" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding}" FontSize="12" VerticalAlignment="Center" />
+                                                            <Button Grid.Column="2" Tag="{Binding}" Click="RemoveBlacklistProcess_Click" Padding="6,3" Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="Remove from blacklist">
+                                                                <FontIcon Glyph="&#xE711;" FontSize="10" Foreground="#EF4444" />
+                                                            </Button>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── 4. SYSTEM & PRIVACY ── -->
+                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="20">
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="System, Desktop &amp; Privacy" FontWeight="SemiBold" FontSize="15" />
+
+                                <!-- Launch at Startup -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Launch at Windows Startup" FontSize="13" />
+                                        <TextBlock Text="Start DoubleTake silently in the system tray on user login" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                     <ToggleSwitch x:Name="StartupToggle" Grid.Column="1" IsOn="True" Toggled="StartupToggle_Toggled" />
                                 </Grid>
 
                                 <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
+                                <!-- Close to Tray -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -727,42 +748,37 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock Text="Close Window Minimizes to System Tray" FontSize="13" />
-                                        <TextBlock Text="Keep DoubleTake active in notification area when closing window" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="Keep DoubleTake active in taskbar notification tray when window is closed" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                     <ToggleSwitch x:Name="MinimizeToTrayToggle" Grid.Column="1" IsOn="True" />
                                 </Grid>
-                            </StackPanel>
-                        </Border>
 
-                        <!-- ── SECTION D: HISTORY & PRIVACY ── -->
-                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                BorderThickness="1" CornerRadius="8" Padding="20">
-                            <StackPanel Spacing="14">
-                                <TextBlock Text="History &amp; Privacy" FontWeight="SemiBold" FontSize="14" />
+                                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
+                                <!-- Persistent History Storage -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock Text="Remember translation history across restarts" FontSize="13" />
-                                        <TextBlock Text="Save lookups locally in %LOCALAPPDATA% (auto-capped at 500 items)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="Remember Translation History Across Restarts" FontSize="13" />
+                                        <TextBlock Text="Save recent lookups locally in ~/.doubletake/history.json (auto-capped at 500 items)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                     <ToggleSwitch x:Name="SaveHistoryToggle" Grid.Column="1" IsOn="True" Toggled="SaveHistoryToggle_Toggled" />
                                 </Grid>
 
                                 <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
+                                <!-- Clear History -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock Text="Clear all translation history" FontSize="13" />
-                                        <TextBlock Text="Permanently erase all locally stored translation records" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="Clear All Translation History" FontSize="13" />
+                                        <TextBlock Text="Permanently erase all stored translation records from disk and memory" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                     <Button x:Name="SettingsClearHistoryButton" Grid.Column="1" Click="SettingsClearHistoryButton_Click">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -774,9 +790,12 @@
                             </StackPanel>
                         </Border>
 
-                        <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,4,0,0">
-                            <Run Text="DoubleTake v1.0.7  ·  WinUI 3 + Windows App SDK 1.5" />
-                        </TextBlock>
+                        <!-- Footer -->
+                        <StackPanel Spacing="4" HorizontalAlignment="Center" Margin="0,6,0,0">
+                            <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextAlignment="Center">
+                                <Run Text="DoubleTake v1.0.7  ·  Built with WinUI 3 + Windows App SDK 1.5" />
+                            </TextBlock>
+                        </StackPanel>
 
                     </StackPanel>
                 </ScrollViewer>

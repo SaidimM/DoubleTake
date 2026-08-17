@@ -133,6 +133,7 @@ namespace QuickTranslator
 
             AutoFallbackToggle.IsOn = config.AutoFallback;
             SpeedSlider.Value = config.SpeedWindowMs;
+            if (SpeedValueText != null) SpeedValueText.Text = $"{config.SpeedWindowMs} ms";
             SmartBiDirectionalToggle.IsOn = config.SmartBiDirectional;
             FullscreenExclusionToggle.IsOn = config.DisableInFullscreen;
 
@@ -477,6 +478,9 @@ namespace QuickTranslator
         {
             if (_isInitializing) return;
             SyncKeysToConfig();
+            SettingsManager.SaveSettings();
+            string engine = (EngineSelectorCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "Google";
+            UpdateProviderStatusBadge(engine);
         }
 
         private void SyncKeysToConfig()
@@ -563,6 +567,11 @@ namespace QuickTranslator
 
         private void SpeedSlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
         {
+            if (SpeedValueText != null)
+            {
+                SpeedValueText.Text = $"{(int)e.NewValue} ms";
+            }
+
             if (!_isInitializing)
             {
                 SettingsManager.Current.SpeedWindowMs = (int)e.NewValue;
