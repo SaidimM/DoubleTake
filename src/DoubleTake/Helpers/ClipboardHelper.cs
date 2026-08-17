@@ -22,6 +22,9 @@ namespace QuickTranslator
         [DllImport("user32.dll", SetLastError = true)]
         static extern bool IsClipboardFormatAvailable(uint format);
 
+        [DllImport("user32.dll")]
+        static extern uint GetClipboardSequenceNumber();
+
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern IntPtr GlobalLock(IntPtr hMem);
 
@@ -64,14 +67,36 @@ namespace QuickTranslator
 
         public static async Task<string> GetSelectedTextAsync()
         {
-            await Task.Delay(30);
+            // Record clipboard sequence number before triggering copy
+            uint seqBefore = GetClipboardSequenceNumber();
+
+            await Task.Delay(25);
+
+            // Synthesize Ctrl+C
             keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
             keybd_event(VK_C, 0, 0, UIntPtr.Zero);
             await Task.Delay(20);
             keybd_event(VK_C, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
             keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-            await Task.Delay(180);
-            return GetCurrentClipboardText();
+
+            // Wait up to 150ms for clipboard sequence number to change
+            for (int i = 0; i < 15; i++)
+            {
+                await Task.Delay(10);
+                uint seqAfter = GetClipboardSequenceNumber();
+                if (seqAfter != seqBefore)
+                {
+                    // New text was genuinely copied into the clipboard!
+                    string text = GetCurrentClipboardText();
+                    if (!string.IsNullOrWhiteSpace(text))
+                    {
+                        return text.Trim();
+                    }
+                }
+            }
+
+            // Sequence number never changed -> NOTHING was selected/highlighted.
+            return string.Empty;
         }
 
         public static async Task ReplaceSelectedTextAsync(string text)
