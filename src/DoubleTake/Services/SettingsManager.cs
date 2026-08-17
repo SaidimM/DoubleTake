@@ -36,6 +36,7 @@ namespace QuickTranslator
         public bool LaunchAtStartup { get; set; } = true;
         public bool ShowTrayIcon { get; set; } = true;
         public bool IsHotkeyPaused { get; set; } = false;
+        public bool SaveHistoryAcrossSessions { get; set; } = true;
 
         // Gaming / App Exclusion
         public bool DisableInFullscreen { get; set; } = true;
@@ -169,6 +170,7 @@ namespace QuickTranslator
                     LaunchAtStartup = _current.LaunchAtStartup,
                     ShowTrayIcon = _current.ShowTrayIcon,
                     IsHotkeyPaused = _current.IsHotkeyPaused,
+                    SaveHistoryAcrossSessions = _current.SaveHistoryAcrossSessions,
                     DisableInFullscreen = _current.DisableInFullscreen,
                     ExcludedProcesses = _current.ExcludedProcesses ?? new List<string>(),
                     DeepLIsPro = _current.DeepLIsPro

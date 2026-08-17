@@ -132,6 +132,8 @@ namespace QuickTranslator
             bool isStartup = await StartupService.IsStartupEnabledAsync();
             StartupToggle.IsOn = isStartup;
 
+            SaveHistoryToggle.IsOn = config.SaveHistoryAcrossSessions;
+
             // Blacklist
             _blacklistProcesses = new ObservableCollection<string>(config.ExcludedProcesses ?? new List<string>());
             BlacklistItemsControl.ItemsSource = _blacklistProcesses;
@@ -495,6 +497,25 @@ namespace QuickTranslator
                 SettingsManager.Current.SpeedWindowMs = (int)e.NewValue;
                 SettingsManager.SaveSettings();
             }
+        }
+
+        private void SaveHistoryToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitializing)
+            {
+                SettingsManager.Current.SaveHistoryAcrossSessions = SaveHistoryToggle.IsOn;
+                SettingsManager.SaveSettings();
+            }
+        }
+
+        private async void SettingsClearHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            HistoryService.ClearAll();
+            RefreshHistoryView();
+
+            SettingsClearHistoryButton.IsEnabled = false;
+            await Task.Delay(800);
+            SettingsClearHistoryButton.IsEnabled = true;
         }
 
         // ── Main Translation Screen Handlers ──────────────────────────────────

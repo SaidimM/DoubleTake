@@ -653,14 +653,52 @@
                                     </StackPanel>
                                     <ToggleSwitch x:Name="MinimizeToTrayToggle" Grid.Column="1" IsOn="True" />
                                 </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── SECTION D: HISTORY & PRIVACY ── -->
+                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="20">
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="History &amp; Privacy" FontWeight="SemiBold" FontSize="14" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Remember translation history across restarts" FontSize="13" />
+                                        <TextBlock Text="Save lookups locally in %LOCALAPPDATA% (auto-capped at 500 items)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="SaveHistoryToggle" Grid.Column="1" IsOn="True" Toggled="SaveHistoryToggle_Toggled" />
+                                </Grid>
 
                                 <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
-                                <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,4,0,0">
-                                    <Run Text="DoubleTake v1.0.7  ·  WinUI 3 + Windows App SDK 1.5" />
-                                </TextBlock>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Clear all translation history" FontSize="13" />
+                                        <TextBlock Text="Permanently erase all locally stored translation records" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                    <Button x:Name="SettingsClearHistoryButton" Grid.Column="1" Click="SettingsClearHistoryButton_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="#EF4444" />
+                                            <TextBlock Text="Clear All" FontSize="12" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
                             </StackPanel>
                         </Border>
+
+                        <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <Run Text="DoubleTake v1.0.7  ·  WinUI 3 + Windows App SDK 1.5" />
+                        </TextBlock>
 
                     </StackPanel>
                 </ScrollViewer>

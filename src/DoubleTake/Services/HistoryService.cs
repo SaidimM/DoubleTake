@@ -130,9 +130,19 @@ namespace QuickTranslator
         {
             try
             {
-                Directory.CreateDirectory(HistoryFolder);
-                string json = JsonSerializer.Serialize(_items, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(HistoryFile, json);
+                if (SettingsManager.Current.SaveHistoryAcrossSessions)
+                {
+                    Directory.CreateDirectory(HistoryFolder);
+                    string json = JsonSerializer.Serialize(_items, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(HistoryFile, json);
+                }
+                else
+                {
+                    if (File.Exists(HistoryFile))
+                    {
+                        File.Delete(HistoryFile);
+                    }
+                }
             }
             catch { }
         }
