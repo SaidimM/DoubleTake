@@ -30,6 +30,12 @@ namespace QuickTranslator
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
 
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
+
+        private const uint IMAGE_ICON = 1;
+        private const uint LR_LOADFROMFILE = 0x00000010;
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT { public int X, Y; }
 
@@ -86,6 +92,22 @@ namespace QuickTranslator
             if (_isInitialized) return;
             _hWnd = hWnd;
 
+            IntPtr hIcon = IntPtr.Zero;
+            try
+            {
+                string iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "app.ico");
+                if (System.IO.File.Exists(iconPath))
+                {
+                    hIcon = LoadImage(IntPtr.Zero, iconPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+                }
+            }
+            catch { }
+
+            if (hIcon == IntPtr.Zero)
+            {
+                hIcon = LoadIcon(IntPtr.Zero, (IntPtr)IDI_APPLICATION);
+            }
+
             _nid = new NOTIFYICONDATA
             {
                 cbSize = Marshal.SizeOf(typeof(NOTIFYICONDATA)),
@@ -93,7 +115,7 @@ namespace QuickTranslator
                 uID = 1001,
                 uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
                 uCallbackMessage = 0x8001,
-                hIcon = LoadIcon(IntPtr.Zero, (IntPtr)IDI_APPLICATION),
+                hIcon = hIcon,
                 szTip = "DoubleTake — Translation Companion"
             };
 

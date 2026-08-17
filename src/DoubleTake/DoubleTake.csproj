@@ -11,6 +11,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
     <PackageCertificateThumbprint>EA4FCD244F6F797C3F57A3BA336C94E4EF5A9CE2</PackageCertificateThumbprint>
   </PropertyGroup>

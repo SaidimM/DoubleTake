@@ -33,6 +33,7 @@ namespace QuickTranslator
             _translator = new TranslationService();
             this.SystemBackdrop = new MicaBackdrop();
             this.ExtendsContentIntoTitleBar = true;
+            this.AppWindow.SetIcon("Assets\\app.ico");
 
             // Setup minimize to tray on closing
             this.AppWindow.Closing += (s, e) =>
