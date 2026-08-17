@@ -45,6 +45,15 @@ namespace QuickTranslator
         [DllImport("user32.dll")]
         static extern uint GetDpiForWindow(IntPtr hWnd);
 
+        [DllImport("user32.dll")]
+        static extern bool ReleaseCapture();
+
+        [DllImport("user32.dll")]
+        static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT { public int X, Y; }
 
@@ -62,6 +71,8 @@ namespace QuickTranslator
 
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         const uint SWP_SHOWWINDOW = 0x0040;
+        const uint WM_NCLBUTTONDOWN = 0x00A1;
+        const int HTCAPTION = 0x0002;
         const int SW_HIDE = 0;
         const int SW_SHOW = 5;
         const uint MONITOR_DEFAULTTONEAREST = 2;
@@ -361,6 +372,27 @@ namespace QuickTranslator
             HidePopup();
             await Task.Delay(100);
             await ClipboardHelper.ReplaceSelectedTextAsync(translation);
+        }
+
+        private void HeaderGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            if (e.GetCurrentPoint(sender as UIElement).Properties.IsLeftButtonPressed)
+            {
+                ReleaseCapture();
+                SendMessage(_hWnd, WM_NCLBUTTONDOWN, (IntPtr)HTCAPTION, IntPtr.Zero);
+
+                // Update anchor coordinate to new dragged position so subsequent elastic resizes stay in place
+                if (GetWindowRect(_hWnd, out RECT rc))
+                {
+                    double dpi = GetDpiScale();
+                    _anchorPoint = new POINT
+                    {
+                        X = rc.Left + (int)(30 * dpi),
+                        Y = rc.Top - (int)(20 * dpi)
+                    };
+                    _hasAnchor = true;
+                }
+            }
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e) => HidePopup();

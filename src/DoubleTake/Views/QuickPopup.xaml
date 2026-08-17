@@ -25,8 +25,8 @@
                     <RowDefinition Height="Auto" /> <!-- Row 2: Footer Action Bar (Always Pinned) -->
                 </Grid.RowDefinitions>
 
-                <!-- ── 1. HEADER ROW (ROW 0 - PINNED) ── -->
-                <Grid Grid.Row="0">
+                <!-- ── 1. HEADER ROW (ROW 0 - PINNED & DRAGGABLE) ── -->
+                <Grid Grid.Row="0" x:Name="HeaderGrid" Background="Transparent" PointerPressed="HeaderGrid_PointerPressed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
