@@ -68,6 +68,18 @@ namespace QuickTranslator
             _hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             ConfigurePresenter();
 
+            // Auto-dismiss on click outside (window deactivation) unless pinned
+            this.Activated += (sender, args) =>
+            {
+                if (args.WindowActivationState == WindowActivationState.Deactivated)
+                {
+                    if (!_isPinned)
+                    {
+                        HidePopup();
+                    }
+                }
+            };
+
             // Set default engine selection in popup
             SyncActiveEngineCombo();
         }
