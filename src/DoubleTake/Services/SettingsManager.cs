@@ -66,7 +66,7 @@ namespace QuickTranslator
     public static class SettingsManager
     {
         private static readonly string ConfigFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DoubleTake");
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".doubletake");
         private static readonly string ConfigPath = Path.Combine(ConfigFolder, "settings.json");
         private const string VaultResource = "DoubleTake_Credentials";
 

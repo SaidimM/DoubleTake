@@ -252,6 +252,11 @@
                     <!-- Static (Non-Collapsible) Date-Grouped History Feed -->
                     <ScrollViewer x:Name="HistoryScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <ItemsControl x:Name="HistoryGroupedItemsControl">
+                            <ItemsControl.ItemContainerTransitions>
+                                <TransitionCollection>
+                                    <RepositionThemeTransition />
+                                </TransitionCollection>
+                            </ItemsControl.ItemContainerTransitions>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="0,0,0,16">
@@ -270,8 +275,13 @@
                                             <Rectangle Grid.Column="1" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" Margin="14,0,0,0" />
                                         </Grid>
 
-                                        <!-- Cards for this date bucket -->
+                                        <!-- Cards for this date bucket with smooth reposition transitions -->
                                         <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemContainerTransitions>
+                                                <TransitionCollection>
+                                                    <RepositionThemeTransition />
+                                                </TransitionCollection>
+                                            </ItemsControl.ItemContainerTransitions>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
@@ -280,6 +290,12 @@
                                                             CornerRadius="8"
                                                             Padding="14,10"
                                                             Margin="0,0,0,8">
+                                                        <Border.ChildTransitions>
+                                                            <TransitionCollection>
+                                                                <RepositionThemeTransition />
+                                                                <ContentThemeTransition />
+                                                            </TransitionCollection>
+                                                        </Border.ChildTransitions>
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*" />

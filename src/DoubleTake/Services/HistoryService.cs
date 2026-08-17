@@ -68,10 +68,10 @@ namespace QuickTranslator
     public static class HistoryService
     {
         private static readonly string HistoryFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DoubleTake");
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".doubletake");
         private static readonly string HistoryFile = Path.Combine(HistoryFolder, "history.json");
 
-        private static List<HistoryEntry> _items = new List<HistoryEntry>();
+        private static List<HistoryEntry> _items = null;
         private static readonly object _lock = new object();
 
         static HistoryService()
@@ -92,7 +92,19 @@ namespace QuickTranslator
                     }
                     else
                     {
-                        _items = new List<HistoryEntry>();
+                        // Check legacy AppData path to migrate if existing
+                        string legacyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DoubleTake");
+                        string legacyFile = Path.Combine(legacyFolder, "history.json");
+                        if (File.Exists(legacyFile))
+                        {
+                            string json = File.ReadAllText(legacyFile);
+                            _items = JsonSerializer.Deserialize<List<HistoryEntry>>(json) ?? new List<HistoryEntry>();
+                            Save(); // Persist to new location
+                        }
+                        else
+                        {
+                            _items = new List<HistoryEntry>();
+                        }
                     }
                 }
                 catch
@@ -108,6 +120,8 @@ namespace QuickTranslator
 
             lock (_lock)
             {
+                if (_items == null) Load();
+
                 var entry = new HistoryEntry
                 {
                     SourceText = source.Trim(),
@@ -134,6 +148,7 @@ namespace QuickTranslator
         {
             lock (_lock)
             {
+                if (_items == null) Load();
                 return _items.ToList();
             }
         }
@@ -142,6 +157,8 @@ namespace QuickTranslator
         {
             lock (_lock)
             {
+                if (_items == null) Load();
+
                 if (string.IsNullOrWhiteSpace(query))
                     return _items.ToList();
 
