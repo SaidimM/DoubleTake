@@ -28,12 +28,12 @@
             </Grid>
         </Border>
 
-        <!-- ── Main Navigation View (Fluent 2 Compact 180px Rail) ── -->
+        <!-- ── Main Navigation View (Fluent 2 Expandable/Collapsible Rail) ── -->
         <NavigationView Grid.Row="1" x:Name="NavView"
                         PaneDisplayMode="Left"
                         OpenPaneLength="180"
                         CompactPaneLength="48"
-                        IsPaneToggleButtonVisible="False"
+                        IsPaneToggleButtonVisible="True"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="True"
                         SelectionChanged="NavView_SelectionChanged">
