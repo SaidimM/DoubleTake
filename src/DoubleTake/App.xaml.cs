@@ -1,5 +1,7 @@
-using Microsoft.UI.Xaml;
 using System;
+using System.Runtime.InteropServices;
+using System.Threading;
+using Microsoft.UI.Xaml;
 
 namespace QuickTranslator
 {
@@ -7,6 +9,25 @@ namespace QuickTranslator
     {
         private MainWindow m_window;
         private QuickPopup m_popup;
+        private static Mutex _singleInstanceMutex;
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern uint RegisterWindowMessage(string lpString);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        private const int SW_RESTORE = 9;
+        private const uint HWND_BROADCAST = 0xFFFF;
 
         public App()
         {
@@ -23,6 +44,24 @@ namespace QuickTranslator
         {
             try
             {
+                // Single Instance Check
+                _singleInstanceMutex = new Mutex(true, "DoubleTake_SingleInstance_App_Mutex", out bool createdNew);
+                if (!createdNew)
+                {
+                    uint showMsg = RegisterWindowMessage("DoubleTake_ShowSingleInstance_Msg");
+                    PostMessage((IntPtr)HWND_BROADCAST, showMsg, IntPtr.Zero, IntPtr.Zero);
+
+                    IntPtr existingHwnd = FindWindow(null, "DoubleTake");
+                    if (existingHwnd != IntPtr.Zero)
+                    {
+                        ShowWindow(existingHwnd, SW_RESTORE);
+                        SetForegroundWindow(existingHwnd);
+                    }
+
+                    Environment.Exit(0);
+                    return;
+                }
+
                 m_window = new MainWindow();
                 m_window.Activate();
 
@@ -46,9 +85,12 @@ namespace QuickTranslator
                 };
                 TrayService.OnExitRequested += () =>
                 {
-                    TrayService.RemoveTrayIcon();
-                    GlobalHotkey.Stop();
-                    this.Exit();
+                    m_window.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        TrayService.RemoveTrayIcon();
+                        GlobalHotkey.Stop();
+                        Environment.Exit(0);
+                    });
                 };
 
                 // Pre-create popup

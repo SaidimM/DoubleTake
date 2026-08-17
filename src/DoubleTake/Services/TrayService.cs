@@ -33,6 +33,20 @@ namespace QuickTranslator
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
 
+        [DllImport("comctl32.dll", SetLastError = true)]
+        private static extern bool SetWindowSubclass(IntPtr hWnd, SubclassProc pfnSubclass, nuint uIdSubclass, nuint dwRefData);
+
+        [DllImport("comctl32.dll", SetLastError = true)]
+        private static extern bool RemoveWindowSubclass(IntPtr hWnd, SubclassProc pfnSubclass, nuint uIdSubclass);
+
+        [DllImport("comctl32.dll", SetLastError = true)]
+        private static extern IntPtr DefSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern uint RegisterWindowMessage(string lpString);
+
+        private delegate IntPtr SubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, nuint dwRefData);
+
         private const uint IMAGE_ICON = 1;
         private const uint LR_LOADFROMFILE = 0x00000010;
 
@@ -79,9 +93,18 @@ namespace QuickTranslator
 
         private const int IDI_APPLICATION = 32512;
 
+        private const uint WM_TRAYCALLBACK = 0x8001;
+        private const uint WM_LBUTTONUP = 0x0202;
+        private const uint WM_LBUTTONDBLCLK = 0x0203;
+        private const uint WM_RBUTTONUP = 0x0205;
+        private const uint WM_CONTEXTMENU = 0x007B;
+
+        public static uint WmShowInstanceMsg { get; private set; }
+
         private static IntPtr _hWnd;
         private static NOTIFYICONDATA _nid;
         private static bool _isInitialized = false;
+        private static SubclassProc _subclassDelegate;
 
         public static event Action OnOpenRequested;
         public static event Action OnHistoryRequested;
@@ -91,6 +114,12 @@ namespace QuickTranslator
         {
             if (_isInitialized) return;
             _hWnd = hWnd;
+
+            WmShowInstanceMsg = RegisterWindowMessage("DoubleTake_ShowSingleInstance_Msg");
+
+            // Subclass the main window to intercept tray callbacks and single-instance activation
+            _subclassDelegate = new SubclassProc(WndProcSubclass);
+            SetWindowSubclass(_hWnd, _subclassDelegate, 1001, 0);
 
             IntPtr hIcon = IntPtr.Zero;
             try
@@ -114,13 +143,38 @@ namespace QuickTranslator
                 hWnd = _hWnd,
                 uID = 1001,
                 uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
-                uCallbackMessage = 0x8001,
+                uCallbackMessage = WM_TRAYCALLBACK,
                 hIcon = hIcon,
                 szTip = "DoubleTake — Translation Companion"
             };
 
             Shell_NotifyIcon(NIM_ADD, ref _nid);
             _isInitialized = true;
+        }
+
+        private static IntPtr WndProcSubclass(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, nuint dwRefData)
+        {
+            if (uMsg == WM_TRAYCALLBACK)
+            {
+                uint msgType = (uint)(lParam.ToInt64() & 0xFFFF);
+                if (msgType == WM_RBUTTONUP || msgType == WM_CONTEXTMENU)
+                {
+                    ShowContextMenu();
+                    return IntPtr.Zero;
+                }
+                else if (msgType == WM_LBUTTONUP || msgType == WM_LBUTTONDBLCLK)
+                {
+                    OnOpenRequested?.Invoke();
+                    return IntPtr.Zero;
+                }
+            }
+            else if (WmShowInstanceMsg != 0 && uMsg == WmShowInstanceMsg)
+            {
+                OnOpenRequested?.Invoke();
+                return IntPtr.Zero;
+            }
+
+            return DefSubclassProc(hWnd, uMsg, wParam, lParam);
         }
 
         public static void ShowContextMenu()
@@ -198,6 +252,11 @@ namespace QuickTranslator
         {
             if (_isInitialized)
             {
+                if (_subclassDelegate != null && _hWnd != IntPtr.Zero)
+                {
+                    try { RemoveWindowSubclass(_hWnd, _subclassDelegate, 1001); } catch { }
+                }
+
                 Shell_NotifyIcon(NIM_DELETE, ref _nid);
                 _isInitialized = false;
             }
