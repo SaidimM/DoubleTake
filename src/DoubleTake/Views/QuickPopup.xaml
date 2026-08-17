@@ -109,7 +109,8 @@
                 </Grid>
 
                 <!-- ── 2. UNIFIED SCROLLABLE BODY (ROW 1 - ZERO-SCROLL FIRST) ── -->
-                <ScrollViewer Grid.Row="1"
+                <ScrollViewer x:Name="ContentScrollViewer"
+                              Grid.Row="1"
                               MaxHeight="360"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"

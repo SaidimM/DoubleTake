@@ -251,6 +251,8 @@ namespace QuickTranslator
             LoadingRing.Visibility = Visibility.Visible;
             StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x38, 0xBD, 0xF8));
 
+            ContentScrollViewer?.ChangeView(null, 0, null, true);
+
             // Immediate initial display near anchor
             ApplyElasticSizingAndPosition();
 
@@ -310,7 +312,27 @@ namespace QuickTranslator
 
                 // Adjust elastic size smoothly at the same anchored location
                 ApplyElasticSizingAndPosition();
+
+                // Auto-scroll down to translated content if text is long/scrollable
+                AutoScrollToTranslation();
             }
+        }
+
+        private async void AutoScrollToTranslation()
+        {
+            try
+            {
+                await Task.Delay(50);
+                if (ContentScrollViewer != null && ContentScrollViewer.ScrollableHeight > 0)
+                {
+                    TranslatedTextBlock.StartBringIntoView(new BringIntoViewOptions
+                    {
+                        AnimationDesired = true,
+                        VerticalAlignmentRatio = 0.0f
+                    });
+                }
+            }
+            catch { }
         }
 
         // ── Event Handlers ───────────────────────────────────────────────────
