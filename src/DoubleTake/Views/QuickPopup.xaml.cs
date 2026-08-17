@@ -179,19 +179,19 @@ namespace QuickTranslator
 
                 // 1. Determine natural DIP width based on text volume
                 int maxChars = Math.Max(_lastSourceText?.Length ?? 0, TranslatedTextBlock.Text?.Length ?? 0);
-                double dipWidth = 400;
-                if (maxChars > 120) dipWidth = 520;
-                else if (maxChars > 40) dipWidth = 460;
-                else dipWidth = 400;
+                double dipWidth = 420;
+                if (maxChars > 160) dipWidth = 540;
+                else if (maxChars > 50) dipWidth = 480;
+                else dipWidth = 420;
 
                 // 2. Measure actual XAML layout height accurately
                 PopupRootCard.Width = dipWidth;
                 PopupRootCard.Measure(new Windows.Foundation.Size(dipWidth, double.PositiveInfinity));
-                double dipHeight = Math.Clamp(PopupRootCard.DesiredSize.Height + 16, 155, 420);
+                double dipHeight = Math.Clamp(PopupRootCard.DesiredSize.Height + 24, 160, 480);
 
-                // 3. Convert DIPs to physical device pixels for SetWindowPos
-                int physWidth = (int)Math.Round(dipWidth * dpi);
-                int physHeight = (int)Math.Round(dipHeight * dpi);
+                // 3. Convert DIPs to physical device pixels for SetWindowPos (including window shadow/outer padding)
+                int physWidth = (int)Math.Ceiling((dipWidth + 14) * dpi);
+                int physHeight = (int)Math.Ceiling((dipHeight + 14) * dpi);
 
                 // 4. Query monitor work area bounds (in physical pixels)
                 IntPtr hMonitor = MonitorFromPoint(_anchorPoint, MONITOR_DEFAULTTONEAREST);

@@ -12,14 +12,23 @@
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
                 CornerRadius="12"
-                Padding="16,14"
-                MinWidth="360"
+                Padding="16,12"
+                MinWidth="380"
                 MaxWidth="560"
                 KeyDown="PopupRootCard_KeyDown">
-            <StackPanel Spacing="8">
+            
+            <!-- Grid Layout to ensure Header and Footer are NEVER clipped -->
+            <Grid RowSpacing="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" /> <!-- Row 0: Header (Always Pinned) -->
+                    <RowDefinition Height="Auto" /> <!-- Row 1: Source Text -->
+                    <RowDefinition Height="Auto" /> <!-- Row 2: Divider -->
+                    <RowDefinition Height="*" />    <!-- Row 3: Translated Text (Flexible & Scrollable) -->
+                    <RowDefinition Height="Auto" /> <!-- Row 4: Footer Action Bar (Always Pinned) -->
+                </Grid.RowDefinitions>
 
-                <!-- ── 1. HEADER ROW ── -->
-                <Grid>
+                <!-- ── 1. HEADER ROW (ROW 0) ── -->
+                <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -39,16 +48,7 @@
                                   Height="26"
                                   BorderThickness="1"
                                   SelectionChanged="TargetLangCombo_SelectionChanged"
-                                  ToolTipService.ToolTip="Change Target Language">
-                            <ComboBoxItem Content="Auto ➔ 中文" Tag="zh-CN" />
-                            <ComboBoxItem Content="Auto ➔ English" Tag="en" />
-                            <ComboBoxItem Content="Auto ➔ 日本語" Tag="ja" />
-                            <ComboBoxItem Content="Auto ➔ Español" Tag="es" />
-                            <ComboBoxItem Content="Auto ➔ Français" Tag="fr" />
-                            <ComboBoxItem Content="Auto ➔ Deutsch" Tag="de" />
-                            <ComboBoxItem Content="Auto ➔ 한국어" Tag="ko" />
-                            <ComboBoxItem Content="Auto ➔ Русский" Tag="ru" />
-                        </ComboBox>
+                                  ToolTipService.ToolTip="Change Target Language" />
                     </StackPanel>
 
                     <!-- Right: Quick Engine Dropdown + Pin + Close -->
@@ -95,8 +95,8 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- ── 2. ORIGINAL SOURCE TEXT SNIPPET (ELASTIC) ── -->
-                <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
+                <!-- ── 2. ORIGINAL SOURCE TEXT SNIPPET (ROW 1) ── -->
+                <ScrollViewer Grid.Row="1" MaxHeight="100" VerticalScrollBarVisibility="Auto" Margin="0,2,0,0">
                     <TextBlock x:Name="SourceTextBlock"
                                FontSize="13"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -104,8 +104,8 @@
                                IsTextSelectionEnabled="True" />
                 </ScrollViewer>
 
-                <!-- ── 3. SMART DIVIDER WITH ARROW ── -->
-                <Grid Margin="0,1">
+                <!-- ── 3. SMART DIVIDER WITH ARROW (ROW 2) ── -->
+                <Grid Grid.Row="2" Margin="0,1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -116,18 +116,18 @@
                     <Rectangle Grid.Column="2" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
                 </Grid>
 
-                <!-- ── 4. TRANSLATED RESULT TEXT (ELASTIC) ── -->
-                <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                <!-- ── 4. TRANSLATED RESULT TEXT (ROW 3) ── -->
+                <ScrollViewer Grid.Row="3" MaxHeight="220" VerticalScrollBarVisibility="Auto" Margin="0,1,0,0">
                     <TextBlock x:Name="TranslatedTextBlock"
-                               FontSize="15"
+                               FontSize="14"
                                FontWeight="SemiBold"
                                Foreground="#38BDF8"
                                TextWrapping="Wrap"
                                IsTextSelectionEnabled="True" />
                 </ScrollViewer>
 
-                <!-- ── 5. FOOTER ACTION & STATUS ROW ── -->
-                <Grid Margin="0,2,0,0">
+                <!-- ── 5. FOOTER ACTION & STATUS ROW (ROW 4) ── -->
+                <Grid Grid.Row="4" Margin="0,2,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -165,7 +165,7 @@
                     </StackPanel>
                 </Grid>
 
-            </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </Window>
