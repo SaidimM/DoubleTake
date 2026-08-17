@@ -46,6 +46,38 @@ namespace QuickTranslator
             this.Activate();
         }
 
+        public void PopulateAndShowWorkspace(string source, string target, string targetLang)
+        {
+            foreach (var item in NavView.MenuItems)
+            {
+                if (item is NavigationViewItem navItem && navItem.Tag as string == "Translate")
+                {
+                    NavView.SelectedItem = navItem;
+                    break;
+                }
+            }
+            TranslateView.Visibility = Visibility.Visible;
+            HistoryView.Visibility = Visibility.Collapsed;
+            SettingsView.Visibility = Visibility.Collapsed;
+
+            SourceTextBox.Text = source ?? string.Empty;
+            TargetTextBox.Text = target ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(targetLang))
+            {
+                for (int i = 0; i < TargetLangCombo.Items.Count; i++)
+                {
+                    if (TargetLangCombo.Items[i] is ComboBoxItem item && item.Tag as string == targetLang)
+                    {
+                        TargetLangCombo.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            ShowAndActivate();
+        }
+
         public void NavigateToHistory()
         {
             foreach (var item in NavView.MenuItems)

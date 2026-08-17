@@ -73,6 +73,17 @@
                             <ComboBoxItem Content="Youdao" Tag="Youdao" />
                         </ComboBox>
 
+                        <!-- Open in Workspace Button -->
+                        <Button x:Name="OpenWorkspaceButton"
+                                Click="OpenWorkspaceButton_Click"
+                                Padding="6,3"
+                                Height="26"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                ToolTipService.ToolTip="Open in Workspace (Full Window)">
+                            <FontIcon Glyph="&#xE8A7;" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Button>
+
                         <!-- Pin Window Toggle Button -->
                         <ToggleButton x:Name="PinButton"
                                       Click="PinButton_Click"
@@ -97,9 +108,9 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- ── 2. UNIFIED SCROLLABLE BODY (ROW 1) ── -->
+                <!-- ── 2. UNIFIED SCROLLABLE BODY (ROW 1 - ZERO-SCROLL FIRST) ── -->
                 <ScrollViewer Grid.Row="1"
-                              MaxHeight="320"
+                              MaxHeight="360"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
                               Padding="0,2,4,2">

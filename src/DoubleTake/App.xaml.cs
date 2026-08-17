@@ -53,6 +53,13 @@ namespace QuickTranslator
 
                 // Pre-create popup
                 m_popup = new QuickPopup();
+                m_popup.OnOpenInWorkspaceRequested += (source, target, targetLang) =>
+                {
+                    m_window.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        m_window.PopulateAndShowWorkspace(source, target, targetLang);
+                    });
+                };
 
                 GlobalHotkey.DoubleCtrlPressed += OnDoubleCtrl;
                 GlobalHotkey.Start();

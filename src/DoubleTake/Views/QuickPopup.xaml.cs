@@ -23,6 +23,8 @@ namespace QuickTranslator
         private POINT _anchorPoint;
         private bool _hasAnchor = false;
 
+        public event Action<string, string, string> OnOpenInWorkspaceRequested;
+
         // ── Win32 Interop ──────────────────────────────────────────────────
         [DllImport("user32.dll")]
         static extern bool GetCursorPos(out POINT lpPoint);
@@ -190,15 +192,15 @@ namespace QuickTranslator
 
                 // 1. Determine natural DIP width based on text volume
                 int maxChars = Math.Max(_lastSourceText?.Length ?? 0, TranslatedTextBlock.Text?.Length ?? 0);
-                double dipWidth = 420;
-                if (maxChars > 160) dipWidth = 540;
-                else if (maxChars > 50) dipWidth = 480;
-                else dipWidth = 420;
+                double dipWidth = 430;
+                if (maxChars > 160) dipWidth = 560;
+                else if (maxChars > 50) dipWidth = 490;
+                else dipWidth = 430;
 
-                // 2. Measure actual XAML layout height accurately
+                // 2. Measure actual XAML layout height accurately (generous Zero-Scroll First ceiling)
                 PopupRootCard.Width = dipWidth;
                 PopupRootCard.Measure(new Windows.Foundation.Size(dipWidth, double.PositiveInfinity));
-                double dipHeight = Math.Clamp(PopupRootCard.DesiredSize.Height + 24, 160, 480);
+                double dipHeight = Math.Clamp(PopupRootCard.DesiredSize.Height + 26, 155, 520);
 
                 // 3. Convert DIPs to physical device pixels for SetWindowPos (including window shadow/outer padding)
                 int physWidth = (int)Math.Ceiling((dipWidth + 14) * dpi);
@@ -432,6 +434,16 @@ namespace QuickTranslator
         private void HeaderGrid_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
         {
             _isDragging = false;
+        }
+
+        private void OpenWorkspaceButton_Click(object sender, RoutedEventArgs e)
+        {
+            string source = SourceTextBlock.Text;
+            string target = TranslatedTextBlock.Text;
+            string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "zh-CN";
+
+            HidePopup();
+            OnOpenInWorkspaceRequested?.Invoke(source, target, targetLang);
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e) => HidePopup();
