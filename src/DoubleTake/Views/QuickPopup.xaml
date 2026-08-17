@@ -5,67 +5,162 @@
     xmlns:local="using:QuickTranslator"
     Title="DoubleTake">
 
-    <Grid Padding="8">
-        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+    <Grid Padding="6">
+        <!-- Floating Acrylic/Mica Card Shell -->
+        <Border x:Name="PopupRootCard"
+                Background="{ThemeResource LayerFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
-                CornerRadius="10"
-                Padding="16">
+                CornerRadius="12"
+                Padding="16"
+                KeyDown="PopupRootCard_KeyDown">
             <StackPanel Spacing="10">
 
-                <!-- ── Header Row ── -->
+                <!-- ── 1. HEADER ROW ── -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <FontIcon Glyph="&#xE8BD;" FontSize="13" Foreground="#38BDF8" />
-                        <TextBlock Text="DoubleTake" FontSize="12" FontWeight="SemiBold" Foreground="#38BDF8" />
-                        <Border Background="#1A38BDF8" CornerRadius="4" Padding="6,1" Margin="4,0,0,0">
-                            <TextBlock Text="Translate" FontSize="10" Foreground="#38BDF8" />
-                        </Border>
+
+                    <!-- Left: Brand + Target Language Selector Pill -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE8BD;" FontSize="14" Foreground="#38BDF8" />
+                        <TextBlock Text="DoubleTake" FontSize="12" FontWeight="SemiBold" Foreground="#38BDF8" VerticalAlignment="Center" />
+
+                        <!-- Quick In-Popup Language Dropdown -->
+                        <ComboBox x:Name="TargetLangCombo"
+                                  SelectedIndex="0"
+                                  Padding="8,2"
+                                  FontSize="11"
+                                  Height="28"
+                                  BorderThickness="1"
+                                  SelectionChanged="TargetLangCombo_SelectionChanged"
+                                  ToolTipService.ToolTip="Change Target Language">
+                            <ComboBoxItem Content="Auto ➔ 中文" Tag="zh-CN" />
+                            <ComboBoxItem Content="Auto ➔ English" Tag="en" />
+                            <ComboBoxItem Content="Auto ➔ 日本語" Tag="ja" />
+                            <ComboBoxItem Content="Auto ➔ Español" Tag="es" />
+                            <ComboBoxItem Content="Auto ➔ Français" Tag="fr" />
+                            <ComboBoxItem Content="Auto ➔ Deutsch" Tag="de" />
+                            <ComboBoxItem Content="Auto ➔ 한국어" Tag="ko" />
+                            <ComboBoxItem Content="Auto ➔ Русский" Tag="ru" />
+                        </ComboBox>
                     </StackPanel>
-                    <Button Grid.Column="2" x:Name="CloseButton" Click="CloseButton_Click"
-                            Padding="4" Background="Transparent" BorderThickness="0">
-                        <FontIcon Glyph="&#xE711;" FontSize="11" />
-                    </Button>
+
+                    <!-- Right: Quick Engine Dropdown + Pin + Close -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <!-- Quick Engine Selector -->
+                        <ComboBox x:Name="EngineQuickCombo"
+                                  SelectedIndex="0"
+                                  Padding="6,2"
+                                  FontSize="11"
+                                  Height="28"
+                                  BorderThickness="1"
+                                  SelectionChanged="EngineQuickCombo_SelectionChanged"
+                                  ToolTipService.ToolTip="Switch Translation Engine">
+                            <ComboBoxItem Content="Google" Tag="Google" />
+                            <ComboBoxItem Content="Bing" Tag="Bing" />
+                            <ComboBoxItem Content="DeepL" Tag="DeepL" />
+                            <ComboBoxItem Content="Baidu" Tag="Baidu" />
+                            <ComboBoxItem Content="Papago" Tag="Papago" />
+                            <ComboBoxItem Content="Yandex" Tag="Yandex" />
+                            <ComboBoxItem Content="Youdao" Tag="Youdao" />
+                        </ComboBox>
+
+                        <!-- Pin Window Toggle Button -->
+                        <ToggleButton x:Name="PinButton"
+                                      Click="PinButton_Click"
+                                      Padding="6,4"
+                                      Height="28"
+                                      Background="Transparent"
+                                      BorderThickness="0"
+                                      ToolTipService.ToolTip="Pin Window on Top (Keep Open)">
+                            <FontIcon x:Name="PinIcon" Glyph="&#xE718;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </ToggleButton>
+
+                        <!-- Close Button -->
+                        <Button x:Name="CloseButton"
+                                Click="CloseButton_Click"
+                                Padding="6,4"
+                                Height="28"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                ToolTipService.ToolTip="Close (Esc)">
+                            <FontIcon Glyph="&#xE711;" FontSize="11" />
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
-                <!-- ── Original Source Text ── -->
-                <ScrollViewer MaxHeight="85" VerticalScrollBarVisibility="Auto">
-                    <TextBlock x:Name="SourceTextBlock" FontSize="13"
+                <!-- ── 2. ORIGINAL SOURCE TEXT SNIPPET ── -->
+                <ScrollViewer MaxHeight="80" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="SourceTextBlock"
+                               FontSize="13"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap" />
+                               TextWrapping="Wrap"
+                               IsTextSelectionEnabled="True" />
                 </ScrollViewer>
 
-                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" Margin="0,2" />
+                <!-- ── 3. SMART DIVIDER WITH ARROW ── -->
+                <Grid Margin="0,1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Rectangle Grid.Column="0" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
+                    <FontIcon Grid.Column="1" Glyph="&#xE8AB;" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="8,0" />
+                    <Rectangle Grid.Column="2" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
+                </Grid>
 
-                <!-- ── Translated Result Text ── -->
+                <!-- ── 4. TRANSLATED RESULT TEXT ── -->
                 <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
-                    <TextBlock x:Name="TranslatedTextBlock" FontSize="15" FontWeight="SemiBold"
-                               Foreground="#38BDF8" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                    <TextBlock x:Name="TranslatedTextBlock"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Foreground="#38BDF8"
+                               TextWrapping="Wrap"
+                               IsTextSelectionEnabled="True" />
                 </ScrollViewer>
 
-                <!-- ── Footer Action Row ── -->
+                <!-- ── 5. FOOTER ACTION & STATUS ROW ── -->
                 <Grid Margin="0,4,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+
+                    <!-- Status & Latency -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <ProgressRing x:Name="LoadingRing" Width="14" Height="14" IsActive="False" Visibility="Collapsed" />
-                        <TextBlock x:Name="TranslateStatusText" Text="Google Translate" FontSize="11"
-                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                        <Ellipse x:Name="StatusDot" Width="6" Height="6" Fill="#4ADE80" VerticalAlignment="Center" />
+                        <TextBlock x:Name="TranslateStatusText"
+                                   Text="Google Engine · Ready"
+                                   FontSize="11"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                   VerticalAlignment="Center" />
                     </StackPanel>
-                    <Button Grid.Column="2" x:Name="CopyButton" Click="CopyButton_Click" Padding="10,5" FontSize="11">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE8C8;" FontSize="11" />
-                            <TextBlock Text="Copy" />
-                        </StackPanel>
-                    </Button>
+
+                    <!-- Action Buttons: Copy + Replace -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                        <!-- Copy Button -->
+                        <Button x:Name="CopyButton" Click="CopyButton_Click" Padding="10,5" FontSize="11">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <FontIcon x:Name="CopyIcon" Glyph="&#xE8C8;" FontSize="11" />
+                                <TextBlock x:Name="CopyButtonText" Text="Copy" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Replace Selection Button -->
+                        <Button x:Name="ReplaceButton" Click="ReplaceButton_Click" Background="#2563EB" Foreground="White" Padding="10,5" FontSize="11">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <FontIcon Glyph="&#xE77F;" FontSize="11" />
+                                <TextBlock Text="Replace" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
             </StackPanel>

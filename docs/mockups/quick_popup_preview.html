@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DoubleTake - QuickPopup Live Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI+Variable+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      font-family: 'Segoe UI Variable Text', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    body {
+      background: #0f172a;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(37, 99, 235, 0.2) 0px, transparent 50%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .title-banner {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Floating Widget Shell */
+    .popup-card {
+      width: 460px;
+      background: rgba(22, 24, 28, 0.88);
+      backdrop-filter: blur(40px) saturate(120%);
+      -webkit-backdrop-filter: blur(40px) saturate(120%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Header Row */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-icon {
+      width: 18px;
+      height: 18px;
+      background: linear-gradient(135deg, #38bdf8, #2563eb);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .app-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .lang-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #38bdf8;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .lang-badge:hover {
+      background: rgba(56, 189, 248, 0.2);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .engine-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .engine-chip:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .icon-btn {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 12px;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .icon-btn.pinned {
+      background: rgba(56, 189, 248, 0.18);
+      color: #38bdf8;
+    }
+
+    /* Content Area */
+    .source-text {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #94a3b8;
+      max-height: 75px;
+      overflow-y: auto;
+      word-break: break-word;
+      user-select: text;
+    }
+
+    .divider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 2px 0;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .divider-icon {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .translated-text {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: #38bdf8;
+      max-height: 110px;
+      overflow-y: auto;
+      word-break: break-word;
+      user-select: text;
+    }
+
+    /* Footer Row */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+    }
+
+    .action-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .copied-flash {
+      background: #16a34a !important;
+      color: white !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="title-banner">✦ DoubleTake — Interactive QuickPopup Component Preview</div>
+
+  <div class="popup-card">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="app-icon">D</div>
+        <span class="app-name">DoubleTake</span>
+        <div class="lang-badge" id="langBadge" title="Click to cycle target language">
+          <span>Auto ➔ 中文</span>
+          <span style="font-size: 9px;">▼</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="engine-chip" id="engineChip" title="Click to cycle translation engine">DeepL</div>
+        <button class="icon-btn" id="pinBtn" title="Pin window on top">📌</button>
+        <button class="icon-btn" title="Close (Esc)">✕</button>
+      </div>
+    </div>
+
+    <!-- Source Snippet -->
+    <div class="source-text" id="sourceText">
+      Bonjour tout le monde, comment allez-vous aujourd'hui? Welcome to DoubleTake!
+    </div>
+
+    <!-- Divider -->
+    <div class="divider-row">
+      <div class="divider-line"></div>
+      <span class="divider-icon">⇆</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- Translated Result -->
+    <div class="translated-text" id="targetText">
+      大家好，今天过得怎么样？欢迎使用 DoubleTake！
+    </div>
+
+    <!-- Footer Action Row -->
+    <div class="footer">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span id="statusLabel">DeepL Engine · 58ms</span>
+      </div>
+      <div class="action-group">
+        <button class="btn-secondary" id="copyBtn" onclick="handleCopy()">
+          <span id="copyIcon">📋</span> <span id="copyText">Copy</span>
+        </button>
+        <button class="btn-primary" onclick="handleReplace()">
+          <span>⚡</span> Replace
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const languages = [
+      { label: "Auto ➔ 中文", tr: "大家好，今天过得怎么样？欢迎使用 DoubleTake！" },
+      { label: "Auto ➔ English", tr: "Hello everyone, how are you doing today? Welcome to DoubleTake!" },
+      { label: "Auto ➔ 日本語", tr: "皆さんこんにちは、今日の調子はいかがですか？DoubleTakeへようこそ！" },
+      { label: "Auto ➔ Español", tr: "¡Hola a todos, cómo están hoy? ¡Bienvenidos a DoubleTake!" }
+    ];
+    let langIndex = 0;
+
+    const engines = ["DeepL", "Google", "Bing", "Baidu", "Papago", "Youdao"];
+    let engineIndex = 0;
+
+    document.getElementById('langBadge').addEventListener('click', () => {
+      langIndex = (langIndex + 1) % languages.length;
+      document.getElementById('langBadge').querySelector('span').innerText = languages[langIndex].label;
+      document.getElementById('targetText').innerText = languages[langIndex].tr;
+    });
+
+    document.getElementById('engineChip').addEventListener('click', () => {
+      engineIndex = (engineIndex + 1) % engines.length;
+      const eng = engines[engineIndex];
+      document.getElementById('engineChip').innerText = eng;
+      document.getElementById('statusLabel').innerText = `${eng} Engine · ${Math.floor(Math.random() * 40 + 40)}ms`;
+    });
+
+    const pinBtn = document.getElementById('pinBtn');
+    pinBtn.addEventListener('click', () => {
+      pinBtn.classList.toggle('pinned');
+    });
+
+    function handleCopy() {
+      const copyBtn = document.getElementById('copyBtn');
+      const copyText = document.getElementById('copyText');
+      const copyIcon = document.getElementById('copyIcon');
+
+      navigator.clipboard?.writeText(document.getElementById('targetText').innerText);
+
+      copyBtn.classList.add('copied-flash');
+      copyIcon.innerText = '✓';
+      copyText.innerText = 'Copied!';
+
+      setTimeout(() => {
+        copyBtn.classList.remove('copied-flash');
+        copyIcon.innerText = '📋';
+        copyText.innerText = 'Copy';
+      }, 1400);
+    }
+
+    function handleReplace() {
+      alert("⚡ 'Replace' will overwrite the selected text in the active app!");
+    }
+  </script>
+</body>
+</html>
