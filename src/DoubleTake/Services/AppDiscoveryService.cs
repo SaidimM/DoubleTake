@@ -19,7 +19,6 @@ namespace QuickTranslator
         public bool IsRunning => Source == "Running";
         public bool IsSelected { get; set; }
 
-        public byte[] IconBytes { get; set; }
         public BitmapImage IconImage { get; set; }
         public bool HasIcon => IconImage != null;
 
@@ -63,15 +62,17 @@ namespace QuickTranslator
                             if (seen.Add(exe))
                             {
                                 string fullPath = AppIconHelper.GetProcessFullPath(p.Id);
-                                byte[] iconBytes = !string.IsNullOrEmpty(fullPath) ? AppIconHelper.GetIconPngBytes(fullPath) : null;
+                                if (!string.IsNullOrEmpty(fullPath))
+                                {
+                                    AppIconHelper.EnsureIconPngCached(fullPath);
+                                }
 
                                 list.Add(new DiscoveredAppItem
                                 {
                                     Name = p.MainWindowTitle.Length > 45 ? p.MainWindowTitle.Substring(0, 42) + "..." : p.MainWindowTitle,
                                     ExeName = exe,
                                     FullPath = fullPath,
-                                    Source = "Running",
-                                    IconBytes = iconBytes
+                                    Source = "Running"
                                 });
 
                                 if (!string.IsNullOrEmpty(fullPath))
@@ -91,13 +92,10 @@ namespace QuickTranslator
                 return list.OrderBy(x => x.Name).ToList();
             });
 
-            // Hydrate UI BitmapImages
+            // Hydrate UI BitmapImages on UI thread
             foreach (var item in rawList)
             {
-                if (item.IconBytes != null)
-                {
-                    item.IconImage = await AppIconHelper.GetBitmapImageFromBytesAsync(item.IconBytes);
-                }
+                item.IconImage = AppIconHelper.GetAppIcon(item.FullPath ?? item.ExeName);
             }
 
             return rawList;
@@ -175,14 +173,17 @@ namespace QuickTranslator
 
                                     if (!string.IsNullOrWhiteSpace(exeName) && !dict.ContainsKey(exeName))
                                     {
-                                        byte[] iconBytes = !string.IsNullOrEmpty(fullPath) ? AppIconHelper.GetIconPngBytes(fullPath) : null;
+                                        if (!string.IsNullOrEmpty(fullPath))
+                                        {
+                                            AppIconHelper.EnsureIconPngCached(fullPath);
+                                        }
+
                                         dict[exeName] = new DiscoveredAppItem
                                         {
                                             Name = displayName,
                                             ExeName = exeName,
                                             FullPath = fullPath,
-                                            Source = "Installed",
-                                            IconBytes = iconBytes
+                                            Source = "Installed"
                                         };
 
                                         if (!string.IsNullOrEmpty(fullPath))
@@ -228,14 +229,17 @@ namespace QuickTranslator
                                     string exeName = Path.GetFileName(target);
                                     if (!dict.ContainsKey(exeName))
                                     {
-                                        byte[] iconBytes = File.Exists(target) ? AppIconHelper.GetIconPngBytes(target) : null;
+                                        if (File.Exists(target))
+                                        {
+                                            AppIconHelper.EnsureIconPngCached(target);
+                                        }
+
                                         dict[exeName] = new DiscoveredAppItem
                                         {
                                             Name = appName,
                                             ExeName = exeName,
                                             FullPath = target,
-                                            Source = "Installed",
-                                            IconBytes = iconBytes
+                                            Source = "Installed"
                                         };
 
                                         lock (_appMetadataCache)
@@ -254,13 +258,10 @@ namespace QuickTranslator
                 return dict.Values.OrderBy(x => x.Name).ToList();
             });
 
-            // Hydrate UI BitmapImages
+            // Hydrate UI BitmapImages on UI thread
             foreach (var item in rawList)
             {
-                if (item.IconBytes != null)
-                {
-                    item.IconImage = await AppIconHelper.GetBitmapImageFromBytesAsync(item.IconBytes);
-                }
+                item.IconImage = AppIconHelper.GetAppIcon(item.FullPath ?? item.ExeName);
             }
 
             return rawList;
@@ -281,7 +282,7 @@ namespace QuickTranslator
                 }
             }
 
-            var iconImage = await AppIconHelper.GetAppIconAsync(fullPath);
+            var iconImage = await AppIconHelper.GetAppIconAsync(fullPath ?? cleanExe);
 
             return new ExcludedAppDisplayItem
             {
