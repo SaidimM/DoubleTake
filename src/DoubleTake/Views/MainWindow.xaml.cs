@@ -104,10 +104,43 @@ namespace QuickTranslator
             _blacklistProcesses = new ObservableCollection<string>(config.ExcludedProcesses ?? new List<string>());
             BlacklistItemsControl.ItemsSource = _blacklistProcesses;
 
+            PopulateWorkspaceTargetLanguages(config.DefaultTargetLang);
+
             UpdateEngineDrawer(config.ActiveEngine);
             UpdateProviderStatusBadge(config.ActiveEngine);
 
             _isInitializing = false;
+        }
+
+        private void PopulateWorkspaceTargetLanguages(string selectCode = "zh-CN")
+        {
+            TargetLangCombo.Items.Clear();
+
+            var recentList = SettingsManager.Current.RecentLanguages ?? new List<string>();
+            int selectedIndex = 0;
+            int currentIndex = 0;
+
+            foreach (var code in recentList)
+            {
+                var match = SettingsManager.LanguageCatalog.FirstOrDefault(x => x.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+                string name = match.DisplayName ?? code;
+
+                var item = new ComboBoxItem
+                {
+                    Content = name,
+                    Tag = code
+                };
+
+                if (code.Equals(selectCode, StringComparison.OrdinalIgnoreCase))
+                {
+                    selectedIndex = currentIndex;
+                }
+
+                TargetLangCombo.Items.Add(item);
+                currentIndex++;
+            }
+
+            TargetLangCombo.SelectedIndex = selectedIndex;
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -446,6 +479,8 @@ namespace QuickTranslator
             {
                 string sourceLang = (SourceLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "auto";
                 string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "zh-CN";
+
+                SettingsManager.RecordLanguageUsed(targetLang);
 
                 string result = await _translator.TranslateAsync(source, targetLang, sourceLang);
                 TargetTextBox.Text = result;

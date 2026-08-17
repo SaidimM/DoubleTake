@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using Windows.Security.Credentials;
 
@@ -16,6 +17,19 @@ namespace QuickTranslator
         public string DefaultTargetLang { get; set; } = "zh-CN";
         public string SecondaryTargetLang { get; set; } = "en";
         public bool SmartBiDirectional { get; set; } = true;
+
+        // Dynamic Language MRU order
+        public List<string> RecentLanguages { get; set; } = new List<string>
+        {
+            "zh-CN",
+            "en",
+            "ja",
+            "es",
+            "fr",
+            "de",
+            "ko",
+            "ru"
+        };
 
         public string PopupPosition { get; set; } = "Near Cursor";
         public bool AutoDismiss { get; set; } = false;
@@ -55,6 +69,18 @@ namespace QuickTranslator
         private static readonly string ConfigPath = Path.Combine(ConfigFolder, "settings.json");
         private const string VaultResource = "DoubleTake_Credentials";
 
+        public static readonly (string Code, string DisplayName)[] LanguageCatalog = new[]
+        {
+            ("zh-CN", "Chinese (Simplified) · 中文"),
+            ("en", "English · 英语"),
+            ("ja", "Japanese · 日本語"),
+            ("es", "Spanish · Español"),
+            ("fr", "French · Français"),
+            ("de", "German · Deutsch"),
+            ("ko", "Korean · 한국어"),
+            ("ru", "Russian · Русский")
+        };
+
         private static AppSettings _current;
 
         public static AppSettings Current
@@ -65,6 +91,25 @@ namespace QuickTranslator
                     LoadSettings();
                 return _current;
             }
+        }
+
+        public static void RecordLanguageUsed(string langCode)
+        {
+            if (string.IsNullOrWhiteSpace(langCode)) return;
+
+            var list = Current.RecentLanguages ?? new List<string>();
+            list.RemoveAll(x => x.Equals(langCode, StringComparison.OrdinalIgnoreCase));
+            list.Insert(0, langCode);
+
+            // Ensure all known languages exist in list
+            foreach (var item in LanguageCatalog)
+            {
+                if (!list.Contains(item.Code, StringComparer.OrdinalIgnoreCase))
+                    list.Add(item.Code);
+            }
+
+            Current.RecentLanguages = list;
+            SaveSettings();
         }
 
         public static void LoadSettings()
@@ -79,6 +124,12 @@ namespace QuickTranslator
                 else
                 {
                     _current = new AppSettings();
+                }
+
+                // Ensure recent languages list is initialized
+                if (_current.RecentLanguages == null || _current.RecentLanguages.Count == 0)
+                {
+                    _current.RecentLanguages = LanguageCatalog.Select(x => x.Code).ToList();
                 }
 
                 // Load secrets from PasswordVault
@@ -112,6 +163,7 @@ namespace QuickTranslator
                     DefaultTargetLang = _current.DefaultTargetLang,
                     SecondaryTargetLang = _current.SecondaryTargetLang,
                     SmartBiDirectional = _current.SmartBiDirectional,
+                    RecentLanguages = _current.RecentLanguages ?? new List<string>(),
                     PopupPosition = _current.PopupPosition,
                     AutoDismiss = _current.AutoDismiss,
                     LaunchAtStartup = _current.LaunchAtStartup,

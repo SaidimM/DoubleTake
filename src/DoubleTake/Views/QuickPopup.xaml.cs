@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -61,7 +62,6 @@ namespace QuickTranslator
 
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         const uint SWP_SHOWWINDOW = 0x0040;
-        const uint SWP_NOACTIVATE = 0x0010;
         const int SW_HIDE = 0;
         const int SW_SHOW = 5;
         const uint MONITOR_DEFAULTTONEAREST = 2;
@@ -118,6 +118,40 @@ namespace QuickTranslator
                     break;
                 }
             }
+        }
+
+        private void PopulateTargetLanguages(string selectCode)
+        {
+            TargetLangCombo.SelectionChanged -= TargetLangCombo_SelectionChanged;
+            TargetLangCombo.Items.Clear();
+
+            var recentList = SettingsManager.Current.RecentLanguages ?? new System.Collections.Generic.List<string>();
+            int selectedIndex = 0;
+            int currentIndex = 0;
+
+            foreach (var code in recentList)
+            {
+                var match = SettingsManager.LanguageCatalog.FirstOrDefault(x => x.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+                string name = match.DisplayName ?? code;
+                string shortName = name.Contains('·') ? name.Split('·')[1].Trim() : name;
+
+                var item = new ComboBoxItem
+                {
+                    Content = $"Auto ➔ {shortName}",
+                    Tag = code
+                };
+
+                if (code.Equals(selectCode, StringComparison.OrdinalIgnoreCase))
+                {
+                    selectedIndex = currentIndex;
+                }
+
+                TargetLangCombo.Items.Add(item);
+                currentIndex++;
+            }
+
+            TargetLangCombo.SelectedIndex = selectedIndex;
+            TargetLangCombo.SelectionChanged += TargetLangCombo_SelectionChanged;
         }
 
         private double GetDpiScale()
@@ -194,7 +228,9 @@ namespace QuickTranslator
             _hasAnchor = true;
 
             SyncActiveEngineCombo();
-            AutoSelectAppropriateTargetLanguage(text);
+
+            string defaultTarget = ResolveTargetCodeForText(text);
+            PopulateTargetLanguages(defaultTarget);
 
             SourceTextBlock.Text = text;
             TranslatedTextBlock.Text = "Translating…";
@@ -208,24 +244,20 @@ namespace QuickTranslator
             await ReTranslateAsync();
         }
 
-        private void AutoSelectAppropriateTargetLanguage(string text)
+        private string ResolveTargetCodeForText(string text)
         {
-            if (string.IsNullOrWhiteSpace(text)) return;
+            if (string.IsNullOrWhiteSpace(text)) return "zh-CN";
 
             bool isChinese = Regex.IsMatch(text, @"[\u4e00-\u9fa5]");
             bool isJapanese = Regex.IsMatch(text, @"[\u3040-\u30ff]");
             bool isKorean = Regex.IsMatch(text, @"[\uac00-\ud7af]");
 
-            // If input text is Chinese, select English (Index 1)
-            // If input text is English / others, select Chinese (Index 0)
+            // If input text is Chinese/Japanese/Korean, target English
             if (isChinese || isJapanese || isKorean)
             {
-                TargetLangCombo.SelectedIndex = 1; // Auto ➔ English
+                return "en";
             }
-            else
-            {
-                TargetLangCombo.SelectedIndex = 0; // Auto ➔ 中文
-            }
+            return "zh-CN";
         }
 
         private async Task ReTranslateAsync()
@@ -272,7 +304,12 @@ namespace QuickTranslator
         private async void TargetLangCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (this.Content == null || _isTranslating) return;
-            await ReTranslateAsync();
+
+            if (TargetLangCombo.SelectedItem is ComboBoxItem item && item.Tag is string langCode)
+            {
+                SettingsManager.RecordLanguageUsed(langCode);
+                await ReTranslateAsync();
+            }
         }
 
         private async void EngineQuickCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
