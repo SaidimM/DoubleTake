@@ -12,12 +12,22 @@ namespace QuickTranslator.Views
         private List<DiscoveredAppItem> _allRunningApps = new List<DiscoveredAppItem>();
         private List<DiscoveredAppItem> _allInstalledApps = new List<DiscoveredAppItem>();
         private bool _showingRunning = true;
+        private readonly HashSet<string> _selectedExes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool _isUpdatingSelection = false;
 
         public List<string> SelectedProcessExes { get; private set; } = new List<string>();
 
-        public AppPickerDialog()
+        public AppPickerDialog(IEnumerable<string> initialExclusions = null)
         {
             this.InitializeComponent();
+            if (initialExclusions != null)
+            {
+                foreach (var exe in initialExclusions)
+                {
+                    if (!string.IsNullOrWhiteSpace(exe))
+                        _selectedExes.Add(exe.Trim());
+                }
+            }
             this.Loaded += AppPickerDialog_Loaded;
         }
 
@@ -26,7 +36,6 @@ namespace QuickTranslator.Views
             LoadingPanel.Visibility = Visibility.Visible;
             AppsListView.Visibility = Visibility.Collapsed;
 
-            // Fetch running and installed apps in parallel
             var runningTask = AppDiscoveryService.GetRunningAppsAsync();
             var installedTask = AppDiscoveryService.GetInstalledAppsAsync();
 
@@ -88,28 +97,56 @@ namespace QuickTranslator.Views
                 ).ToList();
             }
 
+            _isUpdatingSelection = true;
             AppsListView.ItemsSource = filtered;
+
+            // Re-apply selections for visible items
+            AppsListView.SelectedItems.Clear();
+            foreach (var item in filtered)
+            {
+                if (_selectedExes.Contains(item.ExeName))
+                {
+                    AppsListView.SelectedItems.Add(item);
+                }
+            }
+            _isUpdatingSelection = false;
+
+            UpdateSelectionCount();
             EmptyStateText.Visibility = filtered.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void AppsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            int count = AppsListView.SelectedItems.Count;
-            SelectedCountText.Text = $"{count} application{(count == 1 ? "" : "s")} selected";
-            this.IsPrimaryButtonEnabled = count > 0;
+            if (_isUpdatingSelection) return;
+
+            foreach (var item in e.AddedItems)
+            {
+                if (item is DiscoveredAppItem app && !string.IsNullOrWhiteSpace(app.ExeName))
+                {
+                    _selectedExes.Add(app.ExeName);
+                }
+            }
+
+            foreach (var item in e.RemovedItems)
+            {
+                if (item is DiscoveredAppItem app && !string.IsNullOrWhiteSpace(app.ExeName))
+                {
+                    _selectedExes.Remove(app.ExeName);
+                }
+            }
+
+            UpdateSelectionCount();
+        }
+
+        private void UpdateSelectionCount()
+        {
+            int count = _selectedExes.Count;
+            SelectedCountText.Text = $"{count} application{(count == 1 ? "" : "s")} excluded";
         }
 
         private void ContentDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
-            var result = new List<string>();
-            foreach (var item in AppsListView.SelectedItems)
-            {
-                if (item is DiscoveredAppItem app && !string.IsNullOrWhiteSpace(app.ExeName))
-                {
-                    result.Add(app.ExeName);
-                }
-            }
-            SelectedProcessExes = result;
+            SelectedProcessExes = _selectedExes.ToList();
         }
     }
 }

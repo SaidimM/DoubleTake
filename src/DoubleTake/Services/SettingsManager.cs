@@ -40,14 +40,7 @@ namespace QuickTranslator
 
         // Gaming / App Exclusion
         public bool DisableInFullscreen { get; set; } = true;
-        public List<string> ExcludedProcesses { get; set; } = new List<string>
-        {
-            "cs2.exe",
-            "VALORANT-Win64-Shipping.exe",
-            "LeagueClient.exe",
-            "Overwatch.exe",
-            "dota2.exe"
-        };
+        public List<string> ExcludedProcesses { get; set; } = new List<string>();
 
         // DeepL
         public bool DeepLIsPro { get; set; } = false;

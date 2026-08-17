@@ -367,43 +367,25 @@ namespace QuickTranslator
 
             BlacklistItemsControl.ItemsSource = _blacklistDisplayItems;
             BlacklistEmptyState.Visibility = _blacklistDisplayItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            if (ManageExclusionsButtonText != null)
+            {
+                ManageExclusionsButtonText.Text = _blacklistDisplayItems.Count > 0
+                    ? $"Manage Exclusions ({_blacklistDisplayItems.Count})"
+                    : "Exclude Applications…";
+            }
         }
 
         private async void PickInstalledAppsButton_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new QuickTranslator.Views.AppPickerDialog();
+            var currentList = SettingsManager.Current.ExcludedProcesses ?? new List<string>();
+            var dialog = new QuickTranslator.Views.AppPickerDialog(currentList);
             dialog.XamlRoot = this.Content.XamlRoot;
             var result = await dialog.ShowAsync();
 
             if (result == ContentDialogResult.Primary && dialog.SelectedProcessExes != null)
             {
-                var currentList = SettingsManager.Current.ExcludedProcesses ?? new List<string>();
-                bool changed = false;
-                foreach (var exe in dialog.SelectedProcessExes)
-                {
-                    if (!currentList.Contains(exe, StringComparer.OrdinalIgnoreCase))
-                    {
-                        currentList.Add(exe);
-                        changed = true;
-                    }
-                }
-
-                if (changed)
-                {
-                    SettingsManager.Current.ExcludedProcesses = currentList;
-                    SettingsManager.SaveSettings();
-                    await RefreshBlacklistDisplayAsync();
-                }
-            }
-        }
-
-        private async void RemoveBlacklistProcess_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is string name)
-            {
-                var currentList = SettingsManager.Current.ExcludedProcesses ?? new List<string>();
-                currentList.RemoveAll(x => x.Equals(name, StringComparison.OrdinalIgnoreCase));
-                SettingsManager.Current.ExcludedProcesses = currentList;
+                SettingsManager.Current.ExcludedProcesses = dialog.SelectedProcessExes;
                 SettingsManager.SaveSettings();
                 await RefreshBlacklistDisplayAsync();
             }
