@@ -672,24 +672,50 @@
                                 <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
                                 <!-- Excluded Application Executables -->
-                                <StackPanel Spacing="10">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="Excluded Application Executables" FontSize="13" />
-                                        <TextBlock Text="DoubleTake hotkey will remain completely silent inside these processes" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-
-                                    <!-- Add New Executable Input -->
+                                <StackPanel Spacing="12">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="NewBlacklistProcessInput" PlaceholderText="e.g. cs2.exe, valorant.exe, or terminal.exe" Grid.Column="0" Margin="0,0,8,0" />
-                                        <Button Grid.Column="1" Content="Add Process" Click="AddBlacklistProcess_Click" />
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Text="Excluded Application Executables" FontSize="13" />
+                                            <TextBlock Text="DoubleTake hotkey will remain completely silent inside these processes" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1"
+                                                x:Name="PickInstalledAppsButton"
+                                                Click="PickInstalledAppsButton_Click"
+                                                Background="#1A38BDF8"
+                                                BorderBrush="#3338BDF8"
+                                                Padding="12,6">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <FontIcon Glyph="&#xE71D;" FontSize="12" Foreground="#38BDF8" />
+                                                <TextBlock Text="Select from Installed / Running Apps…" FontSize="12" Foreground="#38BDF8" FontWeight="SemiBold" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+
+                                    <!-- Quick Preset Chips -->
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="Quick Presets:" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                                        <Button Content="+ CS2 &amp; Valorant" Tag="cs2.exe,VALORANT-Win64-Shipping.exe" Click="BlacklistPreset_Click" Padding="8,3" FontSize="11" CornerRadius="12" />
+                                        <Button Content="+ League of Legends" Tag="LeagueClientUx.exe,League of Legends.exe" Click="BlacklistPreset_Click" Padding="8,3" FontSize="11" CornerRadius="12" />
+                                        <Button Content="+ Genshin &amp; Star Rail" Tag="GenshinImpact.exe,StarRail.exe" Click="BlacklistPreset_Click" Padding="8,3" FontSize="11" CornerRadius="12" />
+                                        <Button Content="+ Terminal &amp; IDEs" Tag="wt.exe,Code.exe,devenv.exe" Click="BlacklistPreset_Click" Padding="8,3" FontSize="11" CornerRadius="12" />
+                                    </StackPanel>
+
+                                    <!-- Add New Executable Input (Manual fallback) -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="NewBlacklistProcessInput" PlaceholderText="Or enter custom process name (e.g. game.exe)" Grid.Column="0" Margin="0,0,8,0" />
+                                        <Button Grid.Column="1" Content="Add" Click="AddBlacklistProcess_Click" />
                                     </Grid>
 
                                     <!-- Process Chip List -->
-                                    <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
+                                    <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
                                         <ItemsControl x:Name="BlacklistItemsControl">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>

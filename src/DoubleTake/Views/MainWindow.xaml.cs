@@ -355,6 +355,56 @@ namespace QuickTranslator
         }
 
         // ── Blacklist / Exclusion Logic ──────────────────────────────────────
+        private async void PickInstalledAppsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new QuickTranslator.Views.AppPickerDialog();
+            dialog.XamlRoot = this.Content.XamlRoot;
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary && dialog.SelectedProcessExes != null)
+            {
+                bool changed = false;
+                foreach (var exe in dialog.SelectedProcessExes)
+                {
+                    if (!_blacklistProcesses.Contains(exe, StringComparer.OrdinalIgnoreCase))
+                    {
+                        _blacklistProcesses.Add(exe);
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    SettingsManager.Current.ExcludedProcesses = _blacklistProcesses.ToList();
+                    SettingsManager.SaveSettings();
+                }
+            }
+        }
+
+        private void BlacklistPreset_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string exesString)
+            {
+                var exes = exesString.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                bool changed = false;
+                foreach (var exe in exes)
+                {
+                    string clean = exe.Trim();
+                    if (!_blacklistProcesses.Contains(clean, StringComparer.OrdinalIgnoreCase))
+                    {
+                        _blacklistProcesses.Add(clean);
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    SettingsManager.Current.ExcludedProcesses = _blacklistProcesses.ToList();
+                    SettingsManager.SaveSettings();
+                }
+            }
+        }
+
         private void AddBlacklistProcess_Click(object sender, RoutedEventArgs e)
         {
             string name = NewBlacklistProcessInput.Text?.Trim();
