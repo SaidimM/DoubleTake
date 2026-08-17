@@ -6,15 +6,17 @@
     Title="DoubleTake">
 
     <Grid Padding="6">
-        <!-- Floating Acrylic/Mica Card Shell -->
+        <!-- Floating Content-Elastic Acrylic/Mica Card Shell -->
         <Border x:Name="PopupRootCard"
                 Background="{ThemeResource LayerFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
                 CornerRadius="12"
-                Padding="16"
+                Padding="16,14"
+                MinWidth="360"
+                MaxWidth="560"
                 KeyDown="PopupRootCard_KeyDown">
-            <StackPanel Spacing="10">
+            <StackPanel Spacing="8">
 
                 <!-- ── 1. HEADER ROW ── -->
                 <Grid>
@@ -26,15 +28,15 @@
 
                     <!-- Left: Brand + Target Language Selector Pill -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <FontIcon Glyph="&#xE8BD;" FontSize="14" Foreground="#38BDF8" />
+                        <FontIcon Glyph="&#xE8BD;" FontSize="13" Foreground="#38BDF8" />
                         <TextBlock Text="DoubleTake" FontSize="12" FontWeight="SemiBold" Foreground="#38BDF8" VerticalAlignment="Center" />
 
                         <!-- Quick In-Popup Language Dropdown -->
                         <ComboBox x:Name="TargetLangCombo"
                                   SelectedIndex="0"
-                                  Padding="8,2"
+                                  Padding="6,2"
                                   FontSize="11"
-                                  Height="28"
+                                  Height="26"
                                   BorderThickness="1"
                                   SelectionChanged="TargetLangCombo_SelectionChanged"
                                   ToolTipService.ToolTip="Change Target Language">
@@ -56,7 +58,7 @@
                                   SelectedIndex="0"
                                   Padding="6,2"
                                   FontSize="11"
-                                  Height="28"
+                                  Height="26"
                                   BorderThickness="1"
                                   SelectionChanged="EngineQuickCombo_SelectionChanged"
                                   ToolTipService.ToolTip="Switch Translation Engine">
@@ -72,19 +74,19 @@
                         <!-- Pin Window Toggle Button -->
                         <ToggleButton x:Name="PinButton"
                                       Click="PinButton_Click"
-                                      Padding="6,4"
-                                      Height="28"
+                                      Padding="6,3"
+                                      Height="26"
                                       Background="Transparent"
                                       BorderThickness="0"
                                       ToolTipService.ToolTip="Pin Window on Top (Keep Open)">
-                            <FontIcon x:Name="PinIcon" Glyph="&#xE718;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <FontIcon x:Name="PinIcon" Glyph="&#xE718;" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </ToggleButton>
 
                         <!-- Close Button -->
                         <Button x:Name="CloseButton"
                                 Click="CloseButton_Click"
-                                Padding="6,4"
-                                Height="28"
+                                Padding="6,3"
+                                Height="26"
                                 Background="Transparent"
                                 BorderThickness="0"
                                 ToolTipService.ToolTip="Close (Esc)">
@@ -93,8 +95,8 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- ── 2. ORIGINAL SOURCE TEXT SNIPPET ── -->
-                <ScrollViewer MaxHeight="80" VerticalScrollBarVisibility="Auto">
+                <!-- ── 2. ORIGINAL SOURCE TEXT SNIPPET (ELASTIC) ── -->
+                <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
                     <TextBlock x:Name="SourceTextBlock"
                                FontSize="13"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -110,12 +112,12 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Rectangle Grid.Column="0" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
-                    <FontIcon Grid.Column="1" Glyph="&#xE8AB;" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="8,0" />
+                    <FontIcon Grid.Column="1" Glyph="&#xE8AB;" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="6,0" />
                     <Rectangle Grid.Column="2" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
                 </Grid>
 
-                <!-- ── 4. TRANSLATED RESULT TEXT ── -->
-                <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
+                <!-- ── 4. TRANSLATED RESULT TEXT (ELASTIC) ── -->
+                <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
                     <TextBlock x:Name="TranslatedTextBlock"
                                FontSize="15"
                                FontWeight="SemiBold"
@@ -125,7 +127,7 @@
                 </ScrollViewer>
 
                 <!-- ── 5. FOOTER ACTION & STATUS ROW ── -->
-                <Grid Margin="0,4,0,0">
+                <Grid Margin="0,2,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -134,7 +136,7 @@
 
                     <!-- Status & Latency -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <ProgressRing x:Name="LoadingRing" Width="14" Height="14" IsActive="False" Visibility="Collapsed" />
+                        <ProgressRing x:Name="LoadingRing" Width="13" Height="13" IsActive="False" Visibility="Collapsed" />
                         <Ellipse x:Name="StatusDot" Width="6" Height="6" Fill="#4ADE80" VerticalAlignment="Center" />
                         <TextBlock x:Name="TranslateStatusText"
                                    Text="Google Engine · Ready"
@@ -146,7 +148,7 @@
                     <!-- Action Buttons: Copy + Replace -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
                         <!-- Copy Button -->
-                        <Button x:Name="CopyButton" Click="CopyButton_Click" Padding="10,5" FontSize="11">
+                        <Button x:Name="CopyButton" Click="CopyButton_Click" Padding="9,4" FontSize="11">
                             <StackPanel Orientation="Horizontal" Spacing="5">
                                 <FontIcon x:Name="CopyIcon" Glyph="&#xE8C8;" FontSize="11" />
                                 <TextBlock x:Name="CopyButtonText" Text="Copy" />
@@ -154,7 +156,7 @@
                         </Button>
 
                         <!-- Replace Selection Button -->
-                        <Button x:Name="ReplaceButton" Click="ReplaceButton_Click" Background="#2563EB" Foreground="White" Padding="10,5" FontSize="11">
+                        <Button x:Name="ReplaceButton" Click="ReplaceButton_Click" Background="#2563EB" Foreground="White" Padding="9,4" FontSize="11">
                             <StackPanel Orientation="Horizontal" Spacing="5">
                                 <FontIcon Glyph="&#xE77F;" FontSize="11" />
                                 <TextBlock Text="Replace" />

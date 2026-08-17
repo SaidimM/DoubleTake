@@ -114,13 +114,15 @@ namespace QuickTranslator
             }
         }
 
-        // ── Safe Multi-Monitor Screen Clamping ──────────────────────────────
-        private void PositionAndShow(int width, int height)
+        // ── Content-Elastic Dimensions & Screen Clamping ───────────────────
+        private void ApplyElasticSizingAndPosition(string source, string translation)
         {
             try
             {
                 if (_hWnd == IntPtr.Zero)
                     _hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+
+                CalculateElasticDimensions(source, translation, out int width, out int height);
 
                 GetCursorPos(out POINT pt);
 
@@ -129,10 +131,10 @@ namespace QuickTranslator
                 MONITORINFO mi = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
                 GetMonitorInfo(hMonitor, ref mi);
 
-                int x = pt.X - 40;
+                int x = pt.X - 30;
                 int y = pt.Y + 20;
 
-                // Screen boundary clamping
+                // Multi-monitor screen boundary clamping
                 if (x + width > mi.rcWork.Right - 12)
                     x = mi.rcWork.Right - width - 12;
                 if (x < mi.rcWork.Left + 12)
@@ -150,14 +152,52 @@ namespace QuickTranslator
             catch { }
         }
 
+        private void CalculateElasticDimensions(string source, string translation, out int width, out int height)
+        {
+            source ??= string.Empty;
+            translation ??= string.Empty;
+
+            int maxChars = Math.Max(source.Length, translation.Length);
+
+            // Dynamic width scaling based on text length
+            if (maxChars <= 25)
+                width = 370;
+            else if (maxChars <= 80)
+                width = 440;
+            else if (maxChars <= 180)
+                width = 500;
+            else
+                width = 540;
+
+            // Approximate line wrapping counts
+            int charsPerLine = Math.Max(25, (width - 60) / 9);
+            int sourceLines = Math.Max(1, (int)Math.Ceiling((double)source.Length / charsPerLine));
+            int transLines = Math.Max(1, (int)Math.Ceiling((double)translation.Length / charsPerLine));
+
+            // Content heights
+            int sourceHeight = Math.Min(sourceLines * 20, 120);
+            int transHeight = Math.Min(transLines * 26, 170);
+
+            // Base chrome: header (36px) + divider (16px) + footer (38px) + card padding (32px) = ~122px
+            int baseChrome = 122;
+            height = Math.Clamp(baseChrome + sourceHeight + transHeight, 145, 410);
+        }
+
         // ── Main Translation Action ──────────────────────────────────────────
         public async void ShowAndTranslate(string text)
         {
             _lastSourceText = text;
             SyncActiveEngineCombo();
-            PositionAndShow(480, 280);
 
             SourceTextBlock.Text = text;
+            TranslatedTextBlock.Text = "Translating…";
+            LoadingRing.IsActive = true;
+            LoadingRing.Visibility = Visibility.Visible;
+            StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x38, 0xBD, 0xF8));
+
+            // Initial elastic fit
+            ApplyElasticSizingAndPosition(text, "Translating…");
+
             await ReTranslateAsync();
         }
 
@@ -166,7 +206,6 @@ namespace QuickTranslator
             if (string.IsNullOrWhiteSpace(_lastSourceText) || _isTranslating) return;
 
             _isTranslating = true;
-            TranslatedTextBlock.Text = "Translating…";
             LoadingRing.IsActive = true;
             LoadingRing.Visibility = Visibility.Visible;
             StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x38, 0xBD, 0xF8));
@@ -183,6 +222,9 @@ namespace QuickTranslator
                 TranslatedTextBlock.Text = result ?? "No translation available.";
                 TranslateStatusText.Text = $"{engine} Engine · {sw.ElapsedMilliseconds}ms";
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x4A, 0xDE, 0x80));
+
+                // Re-adjust elastic size once final translated text is rendered
+                ApplyElasticSizingAndPosition(_lastSourceText, TranslatedTextBlock.Text);
             }
             catch (Exception ex)
             {
@@ -190,6 +232,8 @@ namespace QuickTranslator
                 TranslatedTextBlock.Text = $"Error: {ex.Message}";
                 TranslateStatusText.Text = $"{engine} Engine · Error";
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0xEF, 0x44, 0x44));
+
+                ApplyElasticSizingAndPosition(_lastSourceText, TranslatedTextBlock.Text);
             }
             finally
             {
