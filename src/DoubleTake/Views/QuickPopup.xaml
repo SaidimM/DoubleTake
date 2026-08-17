@@ -17,17 +17,15 @@
                 MaxWidth="560"
                 KeyDown="PopupRootCard_KeyDown">
             
-            <!-- Grid Layout to ensure Header and Footer are NEVER clipped -->
-            <Grid RowSpacing="6">
+            <!-- 3-Row Grid: Pinned Header, Unified Scrollable Body, Pinned Footer -->
+            <Grid RowSpacing="8">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" /> <!-- Row 0: Header (Always Pinned) -->
-                    <RowDefinition Height="Auto" /> <!-- Row 1: Source Text -->
-                    <RowDefinition Height="Auto" /> <!-- Row 2: Divider -->
-                    <RowDefinition Height="*" />    <!-- Row 3: Translated Text (Flexible & Scrollable) -->
-                    <RowDefinition Height="Auto" /> <!-- Row 4: Footer Action Bar (Always Pinned) -->
+                    <RowDefinition Height="*" />    <!-- Row 1: Unified Scrollable Body -->
+                    <RowDefinition Height="Auto" /> <!-- Row 2: Footer Action Bar (Always Pinned) -->
                 </Grid.RowDefinitions>
 
-                <!-- ── 1. HEADER ROW (ROW 0) ── -->
+                <!-- ── 1. HEADER ROW (ROW 0 - PINNED) ── -->
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -95,39 +93,44 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- ── 2. ORIGINAL SOURCE TEXT SNIPPET (ROW 1) ── -->
-                <ScrollViewer Grid.Row="1" MaxHeight="100" VerticalScrollBarVisibility="Auto" Margin="0,2,0,0">
-                    <TextBlock x:Name="SourceTextBlock"
-                               FontSize="13"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               IsTextSelectionEnabled="True" />
+                <!-- ── 2. UNIFIED SCROLLABLE BODY (ROW 1) ── -->
+                <ScrollViewer Grid.Row="1"
+                              MaxHeight="320"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="0,2,4,2">
+                    <StackPanel Spacing="8">
+                        <!-- Source Text -->
+                        <TextBlock x:Name="SourceTextBlock"
+                                   FontSize="13"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   IsTextSelectionEnabled="True" />
+
+                        <!-- Smart Divider -->
+                        <Grid Margin="0,1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Rectangle Grid.Column="0" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
+                            <FontIcon Grid.Column="1" Glyph="&#xE8AB;" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="6,0" />
+                            <Rectangle Grid.Column="2" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <!-- Translated Result Text -->
+                        <TextBlock x:Name="TranslatedTextBlock"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="#38BDF8"
+                                   TextWrapping="Wrap"
+                                   IsTextSelectionEnabled="True" />
+                    </StackPanel>
                 </ScrollViewer>
 
-                <!-- ── 3. SMART DIVIDER WITH ARROW (ROW 2) ── -->
-                <Grid Grid.Row="2" Margin="0,1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Rectangle Grid.Column="0" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
-                    <FontIcon Grid.Column="1" Glyph="&#xE8AB;" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="6,0" />
-                    <Rectangle Grid.Column="2" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" VerticalAlignment="Center" />
-                </Grid>
-
-                <!-- ── 4. TRANSLATED RESULT TEXT (ROW 3) ── -->
-                <ScrollViewer Grid.Row="3" MaxHeight="220" VerticalScrollBarVisibility="Auto" Margin="0,1,0,0">
-                    <TextBlock x:Name="TranslatedTextBlock"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Foreground="#38BDF8"
-                               TextWrapping="Wrap"
-                               IsTextSelectionEnabled="True" />
-                </ScrollViewer>
-
-                <!-- ── 5. FOOTER ACTION & STATUS ROW (ROW 4) ── -->
-                <Grid Grid.Row="4" Margin="0,2,0,0">
+                <!-- ── 3. FOOTER ACTION & STATUS ROW (ROW 2 - PINNED) ── -->
+                <Grid Grid.Row="2" Margin="0,2,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
