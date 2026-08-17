@@ -367,7 +367,7 @@
                 <!-- 3. SETTINGS & CONFIGURATION SCREEN (FLUENT 2)   -->
                 <!-- ═══════════════════════════════════════════════ -->
                 <ScrollViewer x:Name="SettingsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="24" Padding="0,0,0,40" MaxWidth="820" HorizontalAlignment="Left">
+                    <StackPanel Spacing="24" Padding="0,0,0,40" MaxWidth="840" HorizontalAlignment="Stretch">
 
                         <!-- Header -->
                         <StackPanel Spacing="4" Margin="0,4,0,0">
