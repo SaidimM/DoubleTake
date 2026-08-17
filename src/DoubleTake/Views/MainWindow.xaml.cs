@@ -25,7 +25,7 @@ namespace QuickTranslator
         private readonly TranslationService _translator;
         private QuickPopup _popup;
         private bool _isInitializing = true;
-        private ObservableCollection<string> _blacklistProcesses = new ObservableCollection<string>();
+        private ObservableCollection<ExcludedAppDisplayItem> _blacklistDisplayItems = new ObservableCollection<ExcludedAppDisplayItem>();
 
         public MainWindow()
         {
@@ -144,8 +144,7 @@ namespace QuickTranslator
             SaveHistoryToggle.IsOn = config.SaveHistoryAcrossSessions;
 
             // Blacklist
-            _blacklistProcesses = new ObservableCollection<string>(config.ExcludedProcesses ?? new List<string>());
-            BlacklistItemsControl.ItemsSource = _blacklistProcesses;
+            await RefreshBlacklistDisplayAsync();
 
             PopulateWorkspaceTargetLanguages(config.DefaultTargetLang);
 
@@ -355,6 +354,21 @@ namespace QuickTranslator
         }
 
         // ── Blacklist / Exclusion Logic ──────────────────────────────────────
+        private async Task RefreshBlacklistDisplayAsync()
+        {
+            var configList = SettingsManager.Current.ExcludedProcesses ?? new List<string>();
+            _blacklistDisplayItems.Clear();
+
+            foreach (var exe in configList)
+            {
+                var item = await QuickTranslator.AppDiscoveryService.ResolveExcludedAppItemAsync(exe);
+                _blacklistDisplayItems.Add(item);
+            }
+
+            BlacklistItemsControl.ItemsSource = _blacklistDisplayItems;
+            BlacklistEmptyState.Visibility = _blacklistDisplayItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         private async void PickInstalledAppsButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new QuickTranslator.Views.AppPickerDialog();
@@ -363,72 +377,35 @@ namespace QuickTranslator
 
             if (result == ContentDialogResult.Primary && dialog.SelectedProcessExes != null)
             {
+                var currentList = SettingsManager.Current.ExcludedProcesses ?? new List<string>();
                 bool changed = false;
                 foreach (var exe in dialog.SelectedProcessExes)
                 {
-                    if (!_blacklistProcesses.Contains(exe, StringComparer.OrdinalIgnoreCase))
+                    if (!currentList.Contains(exe, StringComparer.OrdinalIgnoreCase))
                     {
-                        _blacklistProcesses.Add(exe);
+                        currentList.Add(exe);
                         changed = true;
                     }
                 }
 
                 if (changed)
                 {
-                    SettingsManager.Current.ExcludedProcesses = _blacklistProcesses.ToList();
+                    SettingsManager.Current.ExcludedProcesses = currentList;
                     SettingsManager.SaveSettings();
+                    await RefreshBlacklistDisplayAsync();
                 }
             }
         }
 
-        private void BlacklistPreset_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is string exesString)
-            {
-                var exes = exesString.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                bool changed = false;
-                foreach (var exe in exes)
-                {
-                    string clean = exe.Trim();
-                    if (!_blacklistProcesses.Contains(clean, StringComparer.OrdinalIgnoreCase))
-                    {
-                        _blacklistProcesses.Add(clean);
-                        changed = true;
-                    }
-                }
-
-                if (changed)
-                {
-                    SettingsManager.Current.ExcludedProcesses = _blacklistProcesses.ToList();
-                    SettingsManager.SaveSettings();
-                }
-            }
-        }
-
-        private void AddBlacklistProcess_Click(object sender, RoutedEventArgs e)
-        {
-            string name = NewBlacklistProcessInput.Text?.Trim();
-            if (string.IsNullOrWhiteSpace(name)) return;
-
-            if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                name += ".exe";
-
-            if (!_blacklistProcesses.Contains(name, StringComparer.OrdinalIgnoreCase))
-            {
-                _blacklistProcesses.Add(name);
-                SettingsManager.Current.ExcludedProcesses = _blacklistProcesses.ToList();
-                SettingsManager.SaveSettings();
-            }
-            NewBlacklistProcessInput.Text = string.Empty;
-        }
-
-        private void RemoveBlacklistProcess_Click(object sender, RoutedEventArgs e)
+        private async void RemoveBlacklistProcess_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is string name)
             {
-                _blacklistProcesses.Remove(name);
-                SettingsManager.Current.ExcludedProcesses = _blacklistProcesses.ToList();
+                var currentList = SettingsManager.Current.ExcludedProcesses ?? new List<string>();
+                currentList.RemoveAll(x => x.Equals(name, StringComparison.OrdinalIgnoreCase));
+                SettingsManager.Current.ExcludedProcesses = currentList;
                 SettingsManager.SaveSettings();
+                await RefreshBlacklistDisplayAsync();
             }
         }
 
