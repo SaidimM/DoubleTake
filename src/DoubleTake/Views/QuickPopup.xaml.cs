@@ -374,25 +374,64 @@ namespace QuickTranslator
             await ClipboardHelper.ReplaceSelectedTextAsync(translation);
         }
 
+        private bool _isDragging = false;
+        private POINT _dragStartCursor;
+        private RECT _dragStartWindowRect;
+
         private void HeaderGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
-            if (e.GetCurrentPoint(sender as UIElement).Properties.IsLeftButtonPressed)
+            var props = e.GetCurrentPoint(sender as UIElement).Properties;
+            if (props.IsLeftButtonPressed)
             {
-                ReleaseCapture();
-                SendMessage(_hWnd, WM_NCLBUTTONDOWN, (IntPtr)HTCAPTION, IntPtr.Zero);
-
-                // Update anchor coordinate to new dragged position so subsequent elastic resizes stay in place
-                if (GetWindowRect(_hWnd, out RECT rc))
-                {
-                    double dpi = GetDpiScale();
-                    _anchorPoint = new POINT
-                    {
-                        X = rc.Left + (int)(30 * dpi),
-                        Y = rc.Top - (int)(20 * dpi)
-                    };
-                    _hasAnchor = true;
-                }
+                _isDragging = true;
+                GetCursorPos(out _dragStartCursor);
+                GetWindowRect(_hWnd, out _dragStartWindowRect);
+                HeaderGrid.CapturePointer(e.Pointer);
+                e.Handled = true;
             }
+        }
+
+        private void HeaderGrid_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+            if (_isDragging)
+            {
+                GetCursorPos(out POINT currentCursor);
+                int deltaX = currentCursor.X - _dragStartCursor.X;
+                int deltaY = currentCursor.Y - _dragStartCursor.Y;
+
+                int newX = _dragStartWindowRect.Left + deltaX;
+                int newY = _dragStartWindowRect.Top + deltaY;
+
+                const uint SWP_NOSIZE = 0x0001;
+                const uint SWP_NOZORDER = 0x0004;
+                const uint SWP_NOACTIVATE = 0x0010;
+
+                SetWindowPos(_hWnd, IntPtr.Zero, newX, newY, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+                double dpi = GetDpiScale();
+                _anchorPoint = new POINT
+                {
+                    X = newX + (int)(30 * dpi),
+                    Y = newY - (int)(20 * dpi)
+                };
+                _hasAnchor = true;
+                e.Handled = true;
+            }
+        }
+
+        private void HeaderGrid_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            if (_isDragging)
+            {
+                _isDragging = false;
+                HeaderGrid.ReleasePointerCapture(e.Pointer);
+                e.Handled = true;
+            }
+        }
+
+        private void HeaderGrid_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+        {
+            _isDragging = false;
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e) => HidePopup();

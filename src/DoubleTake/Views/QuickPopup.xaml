@@ -26,7 +26,11 @@
                 </Grid.RowDefinitions>
 
                 <!-- ── 1. HEADER ROW (ROW 0 - PINNED & DRAGGABLE) ── -->
-                <Grid Grid.Row="0" x:Name="HeaderGrid" Background="Transparent" PointerPressed="HeaderGrid_PointerPressed">
+                <Grid Grid.Row="0" x:Name="HeaderGrid" Background="Transparent"
+                      PointerPressed="HeaderGrid_PointerPressed"
+                      PointerMoved="HeaderGrid_PointerMoved"
+                      PointerReleased="HeaderGrid_PointerReleased"
+                      PointerCaptureLost="HeaderGrid_PointerCaptureLost">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
