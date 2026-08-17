@@ -5,9 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 
+using System.ComponentModel;
+using System.Text.Json.Serialization;
+using Microsoft.UI.Xaml;
+
 namespace QuickTranslator
 {
-    public class HistoryEntry
+    public class HistoryEntry : INotifyPropertyChanged
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string SourceText { get; set; }
@@ -18,6 +22,47 @@ namespace QuickTranslator
         public DateTime Timestamp { get; set; } = DateTime.Now;
 
         public string FormattedTime => Timestamp.ToString("MMM dd, HH:mm");
+
+        // ── Smart Clamping & Expansion Properties ──────────────────────────
+        [JsonIgnore]
+        public bool IsLongText => (SourceText?.Length > 110 || TranslatedText?.Length > 110 || SourceText?.Contains('\n') == true || TranslatedText?.Contains('\n') == true);
+
+        [JsonIgnore]
+        public Visibility ExpandButtonVisibility => IsLongText ? Visibility.Visible : Visibility.Collapsed;
+
+        private bool _isExpanded = false;
+        [JsonIgnore]
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set
+            {
+                if (_isExpanded != value)
+                {
+                    _isExpanded = value;
+                    OnPropertyChanged(nameof(IsExpanded));
+                    OnPropertyChanged(nameof(MaxLines));
+                    OnPropertyChanged(nameof(ExpandToggleText));
+                    OnPropertyChanged(nameof(ExpandToggleGlyph));
+                    OnPropertyChanged(nameof(TextTrimming));
+                }
+            }
+        }
+
+        [JsonIgnore]
+        public int MaxLines => _isExpanded ? 0 : 2;
+
+        [JsonIgnore]
+        public TextTrimming TextTrimming => _isExpanded ? TextTrimming.None : TextTrimming.CharacterEllipsis;
+
+        [JsonIgnore]
+        public string ExpandToggleText => _isExpanded ? "Show less" : "Show more";
+
+        [JsonIgnore]
+        public string ExpandToggleGlyph => _isExpanded ? "\uE70E" : "\uE70D";
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string prop) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
     }
 
     public static class HistoryService

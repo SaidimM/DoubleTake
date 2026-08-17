@@ -276,6 +276,14 @@ namespace QuickTranslator
             RefreshHistoryView(HistorySearchBox.Text);
         }
 
+        private void HistoryToggleExpand_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is HyperlinkButton btn && btn.Tag is HistoryEntry entry)
+            {
+                entry.IsExpanded = !entry.IsExpanded;
+            }
+        }
+
         private void HistoryCopy_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is string text)

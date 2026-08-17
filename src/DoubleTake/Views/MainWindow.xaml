@@ -295,8 +295,35 @@
                                                                     <TextBlock Text="➔" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
                                                                     <TextBlock Text="{Binding TargetLang}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
                                                                 </StackPanel>
-                                                                <TextBlock Text="{Binding SourceText}" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                                                <TextBlock Text="{Binding TranslatedText}" FontSize="14" FontWeight="SemiBold" Foreground="#38BDF8" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                                <TextBlock Text="{Binding SourceText}"
+                                                                           FontSize="13"
+                                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                           TextWrapping="Wrap"
+                                                                           MaxLines="{Binding MaxLines}"
+                                                                           TextTrimming="{Binding TextTrimming}"
+                                                                           IsTextSelectionEnabled="True" />
+                                                                <TextBlock Text="{Binding TranslatedText}"
+                                                                           FontSize="14"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="#38BDF8"
+                                                                           TextWrapping="Wrap"
+                                                                           MaxLines="{Binding MaxLines}"
+                                                                           TextTrimming="{Binding TextTrimming}"
+                                                                           IsTextSelectionEnabled="True" />
+
+                                                                <!-- Show More / Show Less Toggle (Only visible on long paragraphs) -->
+                                                                <HyperlinkButton Click="HistoryToggleExpand_Click"
+                                                                                 Tag="{Binding}"
+                                                                                 Visibility="{Binding ExpandButtonVisibility}"
+                                                                                 Padding="0,2,0,0"
+                                                                                 Margin="0,2,0,0"
+                                                                                 FontSize="11"
+                                                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                                        <FontIcon Glyph="{Binding ExpandToggleGlyph}" FontSize="9" />
+                                                                        <TextBlock Text="{Binding ExpandToggleText}" FontSize="11" />
+                                                                    </StackPanel>
+                                                                </HyperlinkButton>
                                                             </StackPanel>
                                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                                 <Button Tag="{Binding TranslatedText}" Click="HistoryCopy_Click" Padding="8,5" ToolTipService.ToolTip="Copy Translation">
