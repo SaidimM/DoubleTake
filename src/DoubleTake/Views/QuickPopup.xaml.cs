@@ -92,14 +92,19 @@ namespace QuickTranslator
             // Auto-dismiss on click outside (window deactivation) unless pinned
             this.Activated += (sender, args) =>
             {
+                QuickTranslator.Helpers.DebugLog.Write($"QuickPopup.Activated: state={args.WindowActivationState}, isPinned={_isPinned}, elapsedSinceShown={(DateTime.UtcNow - _lastShownTime).TotalMilliseconds:F0}ms");
                 if (args.WindowActivationState == WindowActivationState.Deactivated)
                 {
                     if (!_isPinned)
                     {
                         // Ignore immediate deactivation within 750ms of display
                         if ((DateTime.UtcNow - _lastShownTime).TotalMilliseconds < 750)
+                        {
+                            QuickTranslator.Helpers.DebugLog.Write("QuickPopup.Activated: Deactivation ignored due to grace period.");
                             return;
+                        }
 
+                        QuickTranslator.Helpers.DebugLog.Write("QuickPopup.Activated: Hiding popup due to deactivation.");
                         HidePopup();
                     }
                 }

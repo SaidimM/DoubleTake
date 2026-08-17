@@ -91,6 +91,7 @@ namespace QuickTranslator
                                cleanNoExt.Equals(procName, StringComparison.OrdinalIgnoreCase);
                     }))
                     {
+                        QuickTranslator.Helpers.DebugLog.Write($"ExclusionService: Active process '{procName}' is in ExcludedProcesses list! Suppressed.");
                         return true;
                     }
                 }
@@ -101,9 +102,13 @@ namespace QuickTranslator
             if (config.DisableInFullscreen)
             {
                 if (IsWindowFullscreenGame(hWnd, procName))
+                {
+                    QuickTranslator.Helpers.DebugLog.Write($"ExclusionService: Active window for '{procName}' is a Fullscreen Game! Suppressed.");
                     return true;
+                }
             }
 
+            QuickTranslator.Helpers.DebugLog.Write($"ExclusionService: Active app '{procName}' is NOT excluded. Hotkey allowed.");
             return false;
         }
 

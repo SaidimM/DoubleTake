@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
+using QuickTranslator.Helpers;
 
 namespace QuickTranslator
 {
@@ -24,6 +25,9 @@ namespace QuickTranslator
 
         [DllImport("user32.dll")]
         static extern uint GetClipboardSequenceNumber();
+
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(int vKey);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern IntPtr GlobalLock(IntPtr hMem);
@@ -102,7 +106,14 @@ namespace QuickTranslator
         {
             uint seqBefore = GetClipboardSequenceNumber();
 
-            await Task.Delay(30);
+            // Wait a brief moment for user to release physical Ctrl key if still held down
+            for (int i = 0; i < 6; i++)
+            {
+                if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) == 0) break;
+                await Task.Delay(10);
+            }
+
+            await Task.Delay(20);
 
             // Synthesize atomic Ctrl+C using SendInput
             var inputs = new INPUT[]
@@ -114,20 +125,30 @@ namespace QuickTranslator
             };
 
             SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+            DebugLog.Write($"ClipboardHelper: Sent SendInput(Ctrl+C), seqBefore={seqBefore}");
 
-            // Poll for clipboard sequence change (up to 300ms for heavy IDEs like IntelliJ/PyCharm)
-            for (int i = 0; i < 20; i++)
+            // Poll for clipboard sequence change (up to 350ms for heavy IDEs like IntelliJ/PyCharm)
+            for (int i = 0; i < 25; i++)
             {
                 await Task.Delay(15);
                 uint seqAfter = GetClipboardSequenceNumber();
                 if (seqAfter != seqBefore)
                 {
                     string text = GetCurrentClipboardText();
+                    DebugLog.Write($"ClipboardHelper: Seq changed to {seqAfter}! Text length={text?.Length ?? 0}, Preview='{text}'");
                     if (!string.IsNullOrWhiteSpace(text))
                     {
                         return text.Trim();
                     }
                 }
+            }
+
+            // Fallback: Check current clipboard in case seq didn't update but text is present
+            string fallbackText = GetCurrentClipboardText();
+            DebugLog.Write($"ClipboardHelper: Seq did not change ({seqBefore}). Current clipboard text='{fallbackText}'");
+            if (!string.IsNullOrWhiteSpace(fallbackText))
+            {
+                return fallbackText.Trim();
             }
 
             return string.Empty;

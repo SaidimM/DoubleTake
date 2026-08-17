@@ -25,7 +25,10 @@ namespace QuickTranslator
         public static void Start()
         {
             if (_hookID == IntPtr.Zero)
+            {
                 _hookID = SetHook(_proc);
+                QuickTranslator.Helpers.DebugLog.Write($"GlobalHotkey.Start: _hookID={_hookID}, error={Marshal.GetLastWin32Error()}");
+            }
         }
 
         public static void Stop()
@@ -44,11 +47,15 @@ namespace QuickTranslator
                 using (Process curProcess = Process.GetCurrentProcess())
                 using (ProcessModule curModule = curProcess.MainModule)
                 {
-                    return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
+                    IntPtr hMod = GetModuleHandle(curModule.ModuleName);
+                    if (hMod == IntPtr.Zero)
+                        hMod = GetModuleHandle(null);
+                    return SetWindowsHookEx(WH_KEYBOARD_LL, proc, hMod, 0);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                QuickTranslator.Helpers.DebugLog.Write($"GlobalHotkey.SetHook error: {ex}");
                 return SetWindowsHookEx(WH_KEYBOARD_LL, proc, IntPtr.Zero, 0);
             }
         }
@@ -76,9 +83,11 @@ namespace QuickTranslator
                         var now = DateTime.UtcNow;
                         double elapsed = (now - _lastCtrlPressTime).TotalMilliseconds;
                         int maxSpeed = SettingsManager.Current?.DoubleTapIntervalMs ?? 550;
+                        QuickTranslator.Helpers.DebugLog.Write($"GlobalHotkey: Ctrl released, elapsed={elapsed:F0}ms, maxSpeed={maxSpeed}ms");
                         if (elapsed >= 15 && elapsed <= Math.Max(700, maxSpeed + 100))
                         {
                             _lastCtrlPressTime = DateTime.MinValue;
+                            QuickTranslator.Helpers.DebugLog.Write("GlobalHotkey: Firing DoubleCtrlPressed event!");
                             DoubleCtrlPressed?.Invoke(null, EventArgs.Empty);
                         }
                         else

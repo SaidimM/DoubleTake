@@ -118,22 +118,42 @@ namespace QuickTranslator
         // ════════════════════════════════════════════════════════════════════
         private void OnDoubleCtrl(object sender, EventArgs e)
         {
-            // Check if active app or game is blacklisted / fullscreen
-            if (ExclusionService.IsActiveAppExcluded()) return;
+            QuickTranslator.Helpers.DebugLog.Write("App.OnDoubleCtrl: Received hotkey event!");
 
-            if (m_window == null) return;
+            // Check if active app or game is blacklisted / fullscreen
+            if (ExclusionService.IsActiveAppExcluded())
+            {
+                QuickTranslator.Helpers.DebugLog.Write("App.OnDoubleCtrl: ExclusionService rejected hotkey.");
+                return;
+            }
+
+            if (m_window == null)
+            {
+                QuickTranslator.Helpers.DebugLog.Write("App.OnDoubleCtrl: m_window is NULL!");
+                return;
+            }
+
             m_window.DispatcherQueue.TryEnqueue(async () =>
             {
                 try
                 {
+                    QuickTranslator.Helpers.DebugLog.Write("App.OnDoubleCtrl: Enqueued task running on UI thread.");
                     string text = await ClipboardHelper.GetSelectedTextAsync();
-                    if (string.IsNullOrWhiteSpace(text)) return;
+                    QuickTranslator.Helpers.DebugLog.Write($"App.OnDoubleCtrl: Retrieved selected text: length={text?.Length ?? 0}");
+
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        QuickTranslator.Helpers.DebugLog.Write("App.OnDoubleCtrl: Selected text is empty. Suppressing popup.");
+                        return;
+                    }
 
                     EnsurePopup();
+                    QuickTranslator.Helpers.DebugLog.Write("App.OnDoubleCtrl: Calling m_popup.ShowAndTranslate()");
                     m_popup.ShowAndTranslate(text);
                 }
                 catch (Exception ex)
                 {
+                    QuickTranslator.Helpers.DebugLog.Write($"App.OnDoubleCtrl: Exception: {ex}");
                     try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\DoubleTake\crash.log", ex.ToString()); } catch { }
                 }
             });
