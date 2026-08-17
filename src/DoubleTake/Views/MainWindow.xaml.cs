@@ -529,6 +529,25 @@ namespace QuickTranslator
             }
         }
 
+        private void SourceTextBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                var ctrlState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control);
+                bool isCtrlDown = (ctrlState & Windows.UI.Core.CoreVirtualKeyStates.Down) == Windows.UI.Core.CoreVirtualKeyStates.Down;
+
+                var shiftState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift);
+                bool isShiftDown = (shiftState & Windows.UI.Core.CoreVirtualKeyStates.Down) == Windows.UI.Core.CoreVirtualKeyStates.Down;
+
+                // Ctrl+Enter always translates; Enter without Shift in single-line text also translates
+                if (isCtrlDown || (!isShiftDown && !SourceTextBox.Text.Contains('\n') && !string.IsNullOrWhiteSpace(SourceTextBox.Text)))
+                {
+                    TranslateButton_Click(this, null);
+                    e.Handled = true;
+                }
+            }
+        }
+
         private void SourceTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             int count = SourceTextBox.Text?.Length ?? 0;
