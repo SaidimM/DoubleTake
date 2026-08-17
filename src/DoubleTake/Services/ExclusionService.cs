@@ -64,8 +64,14 @@ namespace QuickTranslator
                     string fullExe = procName + ".exe";
 
                     if (config.ExcludedProcesses != null && config.ExcludedProcesses.Any(x =>
-                        x.Equals(procName, StringComparison.OrdinalIgnoreCase) ||
-                        x.Equals(fullExe, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        if (string.IsNullOrWhiteSpace(x)) return false;
+                        string clean = System.IO.Path.GetFileName(x).Trim();
+                        string cleanNoExt = System.IO.Path.GetFileNameWithoutExtension(x).Trim();
+                        return clean.Equals(procName, StringComparison.OrdinalIgnoreCase) ||
+                               clean.Equals(fullExe, StringComparison.OrdinalIgnoreCase) ||
+                               cleanNoExt.Equals(procName, StringComparison.OrdinalIgnoreCase);
+                    }))
                     {
                         return true;
                     }
