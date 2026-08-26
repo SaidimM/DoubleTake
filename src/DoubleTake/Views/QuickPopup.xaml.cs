@@ -91,6 +91,7 @@ namespace QuickTranslator
 
             _hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             ConfigurePresenter();
+            _translator.EngineStatusChanged += OnEngineStatusChanged;
 
             // Auto-dismiss on click outside (window deactivation) unless pinned
             this.Activated += (sender, args) =>
@@ -114,6 +115,18 @@ namespace QuickTranslator
             };
 
             SyncActiveEngineCombo();
+        }
+
+        private void OnEngineStatusChanged(string status)
+        {
+            if (_isVisible && DispatcherQueue != null)
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (_isVisible)
+                        TranslateStatusText.Text = status;
+                });
+            }
         }
 
         private void ConfigurePresenter()
@@ -331,7 +344,10 @@ namespace QuickTranslator
                 }
 
                 TranslatedTextBlock.Text = result ?? "No translation available.";
-                TranslateStatusText.Text = $"{engine} Engine · {sw.ElapsedMilliseconds}ms";
+                string status = TranslateStatusText.Text;
+                TranslateStatusText.Text = status.Contains("fallback", StringComparison.OrdinalIgnoreCase)
+                    ? $"{status} · {sw.ElapsedMilliseconds}ms"
+                    : $"{engine} Engine · {sw.ElapsedMilliseconds}ms";
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x4A, 0xDE, 0x80));
             }
             catch (OperationCanceledException)

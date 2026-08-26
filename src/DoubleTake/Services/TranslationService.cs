@@ -21,6 +21,8 @@ namespace QuickTranslator
 
     public class TranslationService
     {
+        public event Action<string> EngineStatusChanged;
+
         private static readonly HttpClient client;
 
         static TranslationService()
@@ -57,12 +59,14 @@ namespace QuickTranslator
             sourceLang ??= config.DefaultSourceLang;
 
             string primaryEngine = !string.IsNullOrWhiteSpace(engine) ? engine : config.ActiveEngine;
+            ReportEngineStatus($"{primaryEngine} Engine · Translating…");
             var primaryResult = await ExecuteEngineAsync(primaryEngine, text, targetLang, sourceLang, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
             if (primaryResult.Success && !string.IsNullOrWhiteSpace(primaryResult.TranslatedText))
             {
                 HistoryService.AddEntry(text, primaryResult.TranslatedText, targetLang, primaryResult.EngineUsed, sourceLang);
+                ReportEngineStatus($"{primaryResult.EngineUsed} Engine · result");
                 return primaryResult.TranslatedText;
             }
 
@@ -70,11 +74,13 @@ namespace QuickTranslator
             if (config.AutoFallback && config.FallbackEngine != "None" && config.FallbackEngine != primaryEngine)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                ReportEngineStatus($"{primaryEngine} failed · trying {config.FallbackEngine}…");
                 var fallbackResult = await ExecuteEngineAsync(config.FallbackEngine, text, targetLang, sourceLang, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (fallbackResult.Success && !string.IsNullOrWhiteSpace(fallbackResult.TranslatedText))
                 {
                     HistoryService.AddEntry(text, fallbackResult.TranslatedText, targetLang, fallbackResult.EngineUsed, sourceLang);
+                    ReportEngineStatus($"{fallbackResult.EngineUsed} Engine · fallback result");
                     return fallbackResult.TranslatedText;
                 }
             }
@@ -83,11 +89,13 @@ namespace QuickTranslator
             if (primaryEngine != "Google")
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                ReportEngineStatus($"{primaryEngine} failed · trying Google…");
                 var googleFallback = await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (googleFallback.Success && !string.IsNullOrWhiteSpace(googleFallback.TranslatedText))
                 {
                     HistoryService.AddEntry(text, googleFallback.TranslatedText, targetLang, "Google", sourceLang);
+                    ReportEngineStatus("Google Engine · fallback result");
                     return googleFallback.TranslatedText;
                 }
             }
@@ -190,6 +198,7 @@ namespace QuickTranslator
         private static string _bingIid;
         private static string _bingKey;
         private static string _bingToken;
+        private static string _bingHost = "www.bing.com";
         private static DateTime _bingTokenExpiry = DateTime.MinValue;
         private static readonly System.Threading.SemaphoreSlim _bingLock = new System.Threading.SemaphoreSlim(1, 1);
 
@@ -199,7 +208,7 @@ namespace QuickTranslator
                 return;
 
             using var cts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromMilliseconds(2500));
+            cts.CancelAfter(TimeSpan.FromSeconds(10));
 
             try
             {
@@ -213,20 +222,21 @@ namespace QuickTranslator
                     return;
 
                 using var req = new HttpRequestMessage(HttpMethod.Get, "https://www.bing.com/translator");
-                req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
+                AddBingRequestHeaders(req);
 
                 var resp = await client.SendAsync(req, cts.Token);
-                if (!resp.IsSuccessStatusCode) return;
-
                 var html = await resp.Content.ReadAsStringAsync(cts.Token);
+                LogBingResponse("auth", resp, html);
+                if (!resp.IsSuccessStatusCode) return;
+                _bingHost = resp.RequestMessage?.RequestUri?.Host ?? "www.bing.com";
 
-                var igMatch = System.Text.RegularExpressions.Regex.Match(html, @"IG:""([A-F0-9]+)""");
+                var igMatch = System.Text.RegularExpressions.Regex.Match(html, @"IG:\s*""([^""\s]+)""", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (igMatch.Success) _bingIg = igMatch.Groups[1].Value;
 
-                var iidMatch = System.Text.RegularExpressions.Regex.Match(html, @"data-iid=""([^""]+)""");
+                var iidMatch = System.Text.RegularExpressions.Regex.Match(html, @"data-iid\s*=\s*""([^""\s]+)""", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (iidMatch.Success) _bingIid = iidMatch.Groups[1].Value;
 
-                var abuseMatch = System.Text.RegularExpressions.Regex.Match(html, @"params_AbusePreventionHelper\s*=\s*\[([0-9]+),\""([^\""]+)\""");
+                var abuseMatch = System.Text.RegularExpressions.Regex.Match(html, @"params_AbusePreventionHelper\s*=\s*\[\s*([0-9]+)\s*,\s*\""([^\""]+)\""", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (abuseMatch.Success)
                 {
                     _bingKey = abuseMatch.Groups[1].Value;
@@ -253,10 +263,11 @@ namespace QuickTranslator
 
                 if (string.IsNullOrEmpty(_bingKey) || string.IsNullOrEmpty(_bingToken))
                 {
+                    ReportEngineStatus("Bing auth failed · trying Google…");
                     return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
                 }
 
-                var url = $"https://www.bing.com/ttranslatev3?isVertical=1&IG={_bingIg}&IID={_bingIid ?? "translator.5023"}";
+                var url = $"https://{_bingHost}/ttranslatev3?isVertical=1&IG={_bingIg}&IID={_bingIid ?? "translator.5023"}";
                 var form = new Dictionary<string, string>
                 {
                     { "text", text },
@@ -270,16 +281,26 @@ namespace QuickTranslator
                 {
                     Content = new FormUrlEncodedContent(form)
                 };
-                req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
+                AddBingRequestHeaders(req, _bingHost);
 
                 var resp = await client.SendAsync(req, cancellationToken);
+                var json = await resp.Content.ReadAsStringAsync(cancellationToken);
+                LogBingResponse("translate", resp, json);
                 if (!resp.IsSuccessStatusCode)
                 {
                     _bingTokenExpiry = DateTime.MinValue;
+                    ReportEngineStatus($"Bing HTTP {(int)resp.StatusCode} · trying Google…");
                     return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
                 }
 
-                var json = await resp.Content.ReadAsStringAsync(cancellationToken);
+                if (!LooksLikeBingJson(resp, json))
+                {
+                    _bingTokenExpiry = DateTime.MinValue;
+                    ReportEngineStatus("Bing returned a non-JSON response · refreshing auth…");
+                    await EnsureBingAuthAsync(cancellationToken);
+                    return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
+                }
+
                 using var parsed = JsonDocument.Parse(json);
                 var root = parsed.RootElement;
 
@@ -290,7 +311,7 @@ namespace QuickTranslator
                     await EnsureBingAuthAsync(cancellationToken);
                     if (!string.IsNullOrEmpty(_bingKey) && !string.IsNullOrEmpty(_bingToken))
                     {
-                        var retryUrl = $"https://www.bing.com/ttranslatev3?isVertical=1&IG={_bingIg}&IID={_bingIid ?? "translator.5023"}";
+                        var retryUrl = $"https://{_bingHost}/ttranslatev3?isVertical=1&IG={_bingIg}&IID={_bingIid ?? "translator.5023"}";
                         var retryForm = new Dictionary<string, string>
                         {
                             { "text", text },
@@ -300,11 +321,12 @@ namespace QuickTranslator
                             { "token", _bingToken }
                         };
                         using var retryReq = new HttpRequestMessage(HttpMethod.Post, retryUrl) { Content = new FormUrlEncodedContent(retryForm) };
-                        retryReq.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
+                        AddBingRequestHeaders(retryReq, _bingHost);
                         var retryResp = await client.SendAsync(retryReq, cancellationToken);
+                        var retryJson = await retryResp.Content.ReadAsStringAsync(cancellationToken);
+                        LogBingResponse("retry", retryResp, retryJson);
                         if (retryResp.IsSuccessStatusCode)
                         {
-                            var retryJson = await retryResp.Content.ReadAsStringAsync(cancellationToken);
                             using var retryParsed = JsonDocument.Parse(retryJson);
                             var resultText = ExtractBingText(retryParsed.RootElement);
                             if (!string.IsNullOrWhiteSpace(resultText))
@@ -317,6 +339,7 @@ namespace QuickTranslator
                 string translated = ExtractBingText(root);
                 if (string.IsNullOrWhiteSpace(translated))
                 {
+                    ReportEngineStatus("Bing returned no result · trying Google…");
                     return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
                 }
 
@@ -326,11 +349,54 @@ namespace QuickTranslator
             {
                 throw;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
+                ReportEngineStatus($"Bing error: {ex.Message} · trying Google…");
                 return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
             }
+        }
+
+        private void ReportEngineStatus(string status)
+        {
+            try
+            {
+                QuickTranslator.Helpers.DebugLog.Write($"TranslationService: {status}");
+                EngineStatusChanged?.Invoke(status);
+            }
+            catch { }
+        }
+
+        private static void AddBingRequestHeaders(HttpRequestMessage request, string host = "www.bing.com")
+        {
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
+            request.Headers.Referrer = new Uri($"https://{host}/translator");
+            request.Headers.Add("Origin", $"https://{host}");
+            request.Headers.Accept.ParseAdd("application/json, text/plain, */*");
+        }
+
+        private static void LogBingResponse(string stage, HttpResponseMessage response, string body)
+        {
+            string contentType = response.Content.Headers.ContentType?.ToString() ?? "(none)";
+            string preview = string.IsNullOrWhiteSpace(body)
+                ? "(empty)"
+                : body.Replace("\r", " ").Replace("\n", " ").Trim();
+            if (preview.Length > 500)
+                preview = preview.Substring(0, 500) + "…";
+
+            QuickTranslator.Helpers.DebugLog.Write(
+                $"Bing {stage} response: HTTP {(int)response.StatusCode} {response.ReasonPhrase}; Content-Type={contentType}; Body={preview}");
+        }
+
+        private static bool LooksLikeBingJson(HttpResponseMessage response, string body)
+        {
+            if (string.IsNullOrWhiteSpace(body))
+                return false;
+
+            string contentType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+            string trimmed = body.TrimStart();
+            return contentType.Contains("json", StringComparison.OrdinalIgnoreCase)
+                && (trimmed.StartsWith("[") || trimmed.StartsWith("{"));
         }
 
         private static string ExtractBingText(JsonElement root)
