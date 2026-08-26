@@ -40,6 +40,8 @@ namespace QuickTranslator
             }
         }
 
+        private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
         private static IntPtr SetHook(LowLevelKeyboardProc proc)
         {
             try
@@ -60,13 +62,31 @@ namespace QuickTranslator
             }
         }
 
-        private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+        public const ulong SYNTHETIC_EXTRA_INFO = 0x51545241; // "QTRA" signature for DoubleTake SendInput
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct KBDLLHOOKSTRUCT
+        {
+            public uint vkCode;
+            public uint scanCode;
+            public uint flags;
+            public uint time;
+            public UIntPtr dwExtraInfo;
+        }
 
         private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0)
+            if (nCode >= 0 && lParam != IntPtr.Zero)
             {
-                int vkCode = Marshal.ReadInt32(lParam);
+                var hookStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+
+                // Ignore synthetic keystrokes injected by DoubleTake itself
+                if (hookStruct.dwExtraInfo == (UIntPtr)SYNTHETIC_EXTRA_INFO)
+                {
+                    return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                }
+
+                uint vkCode = hookStruct.vkCode;
                 bool isCtrl = (vkCode == VK_CONTROL || vkCode == VK_LCONTROL || vkCode == VK_RCONTROL);
 
                 if (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN)
@@ -89,7 +109,6 @@ namespace QuickTranslator
                             _lastCtrlPressTime = DateTime.MinValue;
                             QuickTranslator.Helpers.DebugLog.Write("GlobalHotkey: Firing DoubleCtrlPressed event!");
                             DoubleCtrlPressed?.Invoke(null, EventArgs.Empty);
-                            return (IntPtr)1; // Consume the 2nd Ctrl release to avoid double-ctrl conflicts in apps like JetBrains IDEs
                         }
                         else
                         {

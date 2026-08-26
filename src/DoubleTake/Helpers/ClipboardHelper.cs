@@ -102,6 +102,21 @@ namespace QuickTranslator
             return text;
         }
 
+        public static void ReleaseStuckModifiers()
+        {
+            try
+            {
+                var releaseInputs = new INPUT[]
+                {
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = KEYEVENTF_KEYUP, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } },
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = 0xA2 /* VK_LCONTROL */, dwFlags = KEYEVENTF_KEYUP, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } },
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = 0xA3 /* VK_RCONTROL */, dwFlags = KEYEVENTF_KEYUP, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } }
+                };
+                SendInput((uint)releaseInputs.Length, releaseInputs, Marshal.SizeOf(typeof(INPUT)));
+            }
+            catch { }
+        }
+
         public static async Task<string> GetSelectedTextAsync()
         {
             uint seqBefore = GetClipboardSequenceNumber();
@@ -115,37 +130,45 @@ namespace QuickTranslator
 
             await Task.Delay(20);
 
-            // Synthesize atomic Ctrl+C using SendInput
-            var inputs = new INPUT[]
+            try
             {
-                new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = 0 } } },
-                new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_C, dwFlags = 0 } } },
-                new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_C, dwFlags = KEYEVENTF_KEYUP } } },
-                new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = KEYEVENTF_KEYUP } } }
-            };
-
-            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
-            DebugLog.Write($"ClipboardHelper: Sent SendInput(Ctrl+C), seqBefore={seqBefore}");
-
-            // Poll for clipboard sequence change (up to 450ms for heavy IDEs like IntelliJ/PyCharm)
-            for (int i = 0; i < 30; i++)
-            {
-                await Task.Delay(15);
-                uint seqAfter = GetClipboardSequenceNumber();
-                if (seqAfter != seqBefore)
+                // Synthesize atomic Ctrl+C using SendInput tagged with our synthetic signature
+                var inputs = new INPUT[]
                 {
-                    string text = GetCurrentClipboardText();
-                    DebugLog.Write($"ClipboardHelper: Seq changed to {seqAfter}! Text length={text?.Length ?? 0}, Preview='{text}'");
-                    if (!string.IsNullOrWhiteSpace(text))
-                    {
-                        return text.Trim();
-                    }
-                    return string.Empty;
-                }
-            }
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = 0, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } },
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_C, dwFlags = 0, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } },
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_C, dwFlags = KEYEVENTF_KEYUP, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } },
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = KEYEVENTF_KEYUP, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } }
+                };
 
-            DebugLog.Write($"ClipboardHelper: Seq did not change ({seqBefore}). No text copied.");
-            return string.Empty;
+                SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+                DebugLog.Write($"ClipboardHelper: Sent SendInput(Ctrl+C), seqBefore={seqBefore}");
+
+                // Poll for clipboard sequence change (up to 450ms for heavy IDEs like IntelliJ/PyCharm)
+                for (int i = 0; i < 30; i++)
+                {
+                    await Task.Delay(15);
+                    uint seqAfter = GetClipboardSequenceNumber();
+                    if (seqAfter != seqBefore)
+                    {
+                        string text = GetCurrentClipboardText();
+                        DebugLog.Write($"ClipboardHelper: Seq changed to {seqAfter}! Text length={text?.Length ?? 0}, Preview='{text}'");
+                        if (!string.IsNullOrWhiteSpace(text))
+                        {
+                            return text.Trim();
+                        }
+                        return string.Empty;
+                    }
+                }
+
+                DebugLog.Write($"ClipboardHelper: Seq did not change ({seqBefore}). No text copied.");
+                return string.Empty;
+            }
+            finally
+            {
+                // Guarantee Ctrl and modifier keys are NEVER left stuck down
+                ReleaseStuckModifiers();
+            }
         }
 
         public static async Task ReplaceSelectedTextAsync(string text)
@@ -160,15 +183,19 @@ namespace QuickTranslator
 
                 var inputs = new INPUT[]
                 {
-                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = 0 } } },
-                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_V, dwFlags = 0 } } },
-                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_V, dwFlags = KEYEVENTF_KEYUP } } },
-                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = KEYEVENTF_KEYUP } } }
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = 0, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } },
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_V, dwFlags = 0, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } },
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_V, dwFlags = KEYEVENTF_KEYUP, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } },
+                    new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = KEYEVENTF_KEYUP, dwExtraInfo = (UIntPtr)GlobalHotkey.SYNTHETIC_EXTRA_INFO } } }
                 };
 
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
             }
             catch { }
+            finally
+            {
+                ReleaseStuckModifiers();
+            }
         }
     }
 }
