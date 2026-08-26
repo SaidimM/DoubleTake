@@ -28,7 +28,7 @@
       <stop offset="100%" stop-color="#7c3aed"/>
     </linearGradient>
 
-    <!-- Filters / Shadows -->
+    <!-- Filters / Drop Shadows -->
     <filter id="shadowWin" x="-10%" y="-10%" width="130%" height="130%">
       <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.45"/>
     </filter>
@@ -42,13 +42,13 @@
       <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
     </filter>
 
-    <!-- Clip Path for Target Text Selection -->
+    <!-- Clip Path for Dynamic Text Selection Highlight (X=146, Y=236, H=24) -->
     <clipPath id="textSelectClip">
-      <rect x="146" y="206" width="0" height="26" rx="3">
+      <rect x="146" y="236" width="0" height="24" rx="3">
         <animate attributeName="width"
                  dur="8s"
                  repeatCount="indefinite"
-                 values="0; 0; 376; 376; 376; 0; 0"
+                 values="0; 0; 378; 378; 378; 0; 0"
                  keyTimes="0; 0.125; 0.30; 0.85; 0.90; 0.95; 1"
                  calcMode="spline"
                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1"/>
@@ -62,19 +62,19 @@
     .nunito { font-family: 'Nunito', 'Segoe UI', sans-serif; }
   </style>
 
-  <!-- Stage Background -->
+  <!-- Stage Background Canvas -->
   <rect width="800" height="520" rx="16" fill="url(#bgGrad)"/>
   
-  <!-- Subtle Background Grid Accent -->
+  <!-- Subtle Background Grid Accents -->
   <g opacity="0.08" fill="#ffffff">
     <circle cx="40" cy="40" r="1.5"/><circle cx="120" cy="40" r="1.5"/><circle cx="200" cy="40" r="1.5"/><circle cx="280" cy="40" r="1.5"/><circle cx="360" cy="40" r="1.5"/><circle cx="440" cy="40" r="1.5"/><circle cx="520" cy="40" r="1.5"/><circle cx="600" cy="40" r="1.5"/><circle cx="680" cy="40" r="1.5"/><circle cx="760" cy="40" r="1.5"/>
     <circle cx="40" cy="480" r="1.5"/><circle cx="120" cy="480" r="1.5"/><circle cx="200" cy="480" r="1.5"/><circle cx="280" cy="480" r="1.5"/><circle cx="360" cy="480" r="1.5"/><circle cx="440" cy="480" r="1.5"/><circle cx="520" cy="480" r="1.5"/><circle cx="600" cy="480" r="1.5"/><circle cx="680" cy="480" r="1.5"/><circle cx="760" cy="480" r="1.5"/>
   </g>
 
-  <!-- 1. Windows Document Window (Word Style) -->
-  <g transform="translate(110, 50)" filter="url(#shadowWin)">
-    <!-- Window Body -->
-    <rect width="580" height="380" rx="8" fill="#fafafa" stroke="#d1d5db" stroke-width="1"/>
+  <!-- 1. Document Window (Word Style) -->
+  <g transform="translate(110, 45)" filter="url(#shadowWin)">
+    <!-- Window Card Body -->
+    <rect width="580" height="385" rx="8" fill="#fafafa" stroke="#d1d5db" stroke-width="1"/>
     
     <!-- Titlebar -->
     <path d="M 0,8 A 8,8 0 0,1 8,0 L 572,0 A 8,8 0 0,1 580,8 L 580,32 L 0,32 Z" fill="#202020"/>
@@ -82,47 +82,49 @@
     <text x="20" y="20" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">W</text>
     <text x="36" y="20" font-size="12" fill="#d1d5db" font-weight="500">Article.docx - Word</text>
     
-    <!-- Window Buttons -->
+    <!-- Window Control Buttons -->
     <g fill="#9ca3af" font-size="11">
       <text x="495" y="20">─</text>
       <text x="525" y="20">□</text>
       <text x="555" y="20">✕</text>
     </g>
 
-    <!-- Document Content -->
-    <g transform="translate(36, 60)">
-      <text x="0" y="24" font-size="20" font-weight="700" fill="#111827">Getting Started with DoubleTake</text>
-      <text x="0" y="48" font-size="11.5" fill="#9ca3af">Last edited: August 27, 2026 · 3 min read</text>
-      <line x1="0" y1="58" x2="508" y2="58" stroke="#e5e7eb" stroke-width="1"/>
+    <!-- Document Text Layout -->
+    <g transform="translate(36, 56)">
+      <text x="0" y="26" font-size="20" font-weight="700" fill="#111827">Getting Started with DoubleTake</text>
+      <text x="0" y="50" font-size="11.5" fill="#9ca3af">Last edited: August 27, 2026 · 3 min read</text>
+      <line x1="0" y1="60" x2="508" y2="60" stroke="#e5e7eb" stroke-width="1"/>
 
+      <!-- Paragraph 1 -->
       <text x="0" y="86" font-size="13.5" fill="#374151">
         <tspan x="0" dy="0">DoubleTake is a lightweight desktop translation companion designed</tspan>
         <tspan x="0" dy="22">for Windows users who need instant translations without disrupting workflow.</tspan>
       </text>
 
-      <!-- Normal text on base document -->
-      <text x="0" y="154" font-size="14.5" font-weight="600" fill="#1e293b">DoubleTake brings instant translation to your desktop.</text>
+      <!-- Paragraph 2 (Target Sentence on base document) -->
+      <text x="0" y="152" font-size="14.5" font-weight="600" fill="#1e293b">DoubleTake brings instant translation to your desktop.</text>
 
-      <text x="0" y="196" font-size="13.5" fill="#6b7280">
+      <!-- Paragraph 3 -->
+      <text x="0" y="194" font-size="13.5" fill="#6b7280">
         <tspan x="0" dy="0">With support for 7 major translation engines including Google, Bing,</tspan>
         <tspan x="0" dy="22">and DeepL, you get fast, accurate results right beside your cursor.</tspan>
       </text>
     </g>
   </g>
 
-  <!-- 2. Text Selection Highlight Layer (Blue Fill + White Text) -->
+  <!-- 2. Text Selection Highlight Layer (Blue Selection + Crisp White Text) -->
   <g clip-path="url(#textSelectClip)">
-    <rect x="146" y="204" width="376" height="24" rx="3" fill="#2563eb"/>
-    <text x="146" y="221" font-size="14.5" font-weight="600" fill="#ffffff">DoubleTake brings instant translation to your desktop.</text>
+    <rect x="146" y="236" width="378" height="24" rx="3" fill="#2563eb"/>
+    <text x="146" y="253" font-size="14.5" font-weight="600" fill="#ffffff">DoubleTake brings instant translation to your desktop.</text>
   </g>
 
-  <!-- 3. Animated Cursor -->
+  <!-- 3. Animated Cursor (Glides exactly along the target line) -->
   <g>
     <animateTransform attributeName="transform"
                       type="translate"
                       dur="8s"
                       repeatCount="indefinite"
-                      values="146, 214; 146, 214; 522, 214; 522, 214; 522, 214; 146, 214; 146, 214"
+                      values="146, 246; 146, 246; 524, 246; 524, 246; 524, 246; 146, 246; 146, 246"
                       keyTimes="0; 0.125; 0.30; 0.85; 0.90; 0.95; 1"
                       calcMode="spline"
                       keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1"/>
@@ -138,8 +140,8 @@
     </g>
   </g>
 
-  <!-- 4. Cartoon Ctrl Key at Bottom Center (X=400, Y=420) -->
-  <g transform="translate(400, 420)">
+  <!-- 4. Cartoon Ctrl Key at Bottom Center (X=400, Y=415) -->
+  <g transform="translate(400, 415)">
     <!-- Container Entrance & Exit Animation -->
     <g>
       <animateTransform attributeName="transform"
@@ -248,8 +250,8 @@
     </g>
   </g>
 
-  <!-- 5. Confetti Explosions -->
-  <g transform="translate(400, 240)">
+  <!-- 5. Confetti Particles Burst -->
+  <g transform="translate(400, 245)">
     <g>
       <animate attributeName="opacity"
                dur="8s"
@@ -272,9 +274,9 @@
     </g>
   </g>
 
-  <!-- 6. Translation Quick Popup Window (Centered at X=400, Y=240) -->
-  <g transform="translate(400, 240)">
-    <!-- Popup Motion Animation (Spring Bounce In / Scale Out) -->
+  <!-- 6. Translation Quick Popup Window (Centered at X=400, Y=245) -->
+  <g transform="translate(400, 245)">
+    <!-- Popup Spring Bounce In / Scale Out -->
     <g>
       <animateTransform attributeName="transform"
                         type="scale"
@@ -291,10 +293,10 @@
                values="0; 0; 1; 1; 1; 0; 0"
                keyTimes="0; 0.45; 0.48; 0.84; 0.88; 0.90; 1"/>
 
-      <!-- Inner Card Content (Centered from -190, -115 to +190, +115) -->
+      <!-- Inner Card Content (Centered at -190, -115 to +190, +115) -->
       <g transform="translate(-190, -115)" filter="url(#shadowPopup)">
-        <!-- Card Background -->
-        <rect width="380" height="230" rx="14" fill="#282a2e" fill-opacity="0.94" stroke="rgba(255,255,255,0.12)" stroke-width="1.2"/>
+        <!-- Frosted Dark Card Body -->
+        <rect width="380" height="230" rx="14" fill="#282a2e" fill-opacity="0.95" stroke="rgba(255,255,255,0.12)" stroke-width="1.2"/>
         
         <!-- Header Bar -->
         <g transform="translate(16, 16)">
@@ -302,7 +304,7 @@
           <text x="10" y="14" font-size="11" fill="#ffffff" text-anchor="middle">★</text>
           <text class="nunito" x="28" y="15" font-size="13.5" font-weight="700" fill="#f3f4f6">DoubleTake</text>
           
-          <!-- Active Engine Dropdown -->
+          <!-- Active Engine Dropdown Pill -->
           <rect x="254" y="0" width="60" height="20" rx="5" fill="rgba(255,255,255,0.08)"/>
           <text x="284" y="14" font-size="11" font-weight="600" fill="#9ca3af" text-anchor="middle">Bing ▾</text>
 
@@ -316,7 +318,7 @@
           <text x="8" y="16" font-size="12.5" font-weight="500" fill="#93c5fd">DoubleTake brings instant translation to your desktop.</text>
         </g>
 
-        <!-- Language Switcher Pill -->
+        <!-- Language Switcher Bar -->
         <g transform="translate(18, 100)">
           <rect x="0" y="0" width="96" height="22" rx="6" fill="rgba(255,255,255,0.08)"/>
           <text class="nunito" x="12" y="15" font-size="11" font-weight="800" fill="#ffffff">EN</text>
