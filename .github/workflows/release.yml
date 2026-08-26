@@ -1,0 +1,44 @@
+name: Build & Release Setup Wizard
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore DoubleTake.sln
+
+    - name: Publish Unpackaged Self-Contained WinUI 3 App
+      run: |
+        dotnet publish src/DoubleTake/DoubleTake.csproj -c Release -r win-x64 --self-contained true -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o publish-unpackaged
+
+    - name: Create Portable Zip Package
+      run: |
+        Compress-Archive -Path publish-unpackaged\* -DestinationPath DoubleTake-Portable-win-x64.zip -Force
+
+    - name: Compile Inno Setup Installer (.exe)
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ReleaseOutput/DoubleTake-Setup-*.exe
+          DoubleTake-Portable-win-x64.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

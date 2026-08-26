@@ -13,6 +13,8 @@ obj/
 *.msixbundle
 PackageOutput/
 AppPackages/
+ReleaseOutput/
+publish-unpackaged/
 crash.log
 
 ## OS Files
