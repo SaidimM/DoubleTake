@@ -160,7 +160,7 @@
                         <ProgressRing x:Name="LoadingRing" Width="13" Height="13" IsActive="False" Visibility="Collapsed" />
                         <Ellipse x:Name="StatusDot" Width="6" Height="6" Fill="#4ADE80" VerticalAlignment="Center" />
                         <TextBlock x:Name="TranslateStatusText"
-                                   Text="Google Engine · Ready"
+                                   Text="Ready"
                                    FontSize="11"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                    VerticalAlignment="Center" />

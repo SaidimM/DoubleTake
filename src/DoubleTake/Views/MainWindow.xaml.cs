@@ -357,24 +357,28 @@ namespace QuickTranslator
         // ── Blacklist / Exclusion Logic ──────────────────────────────────────
         private async Task RefreshBlacklistDisplayAsync()
         {
-            var configList = SettingsManager.Current.ExcludedProcesses ?? new List<string>();
-            _blacklistDisplayItems.Clear();
-
-            foreach (var exe in configList)
+            try
             {
-                var item = await QuickTranslator.AppDiscoveryService.ResolveExcludedAppItemAsync(exe);
-                _blacklistDisplayItems.Add(item);
-            }
+                var configList = (SettingsManager.Current.ExcludedProcesses ?? new List<string>()).ToList();
+                _blacklistDisplayItems.Clear();
 
-            BlacklistItemsControl.ItemsSource = _blacklistDisplayItems;
-            BlacklistEmptyState.Visibility = _blacklistDisplayItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+                foreach (var exe in configList)
+                {
+                    var item = await QuickTranslator.AppDiscoveryService.ResolveExcludedAppItemAsync(exe);
+                    _blacklistDisplayItems.Add(item);
+                }
 
-            if (ManageExclusionsButtonText != null)
-            {
-                ManageExclusionsButtonText.Text = _blacklistDisplayItems.Count > 0
-                    ? $"Manage Exclusions ({_blacklistDisplayItems.Count})"
-                    : "Exclude Applications…";
+                BlacklistItemsControl.ItemsSource = _blacklistDisplayItems;
+                BlacklistEmptyState.Visibility = _blacklistDisplayItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+                if (ManageExclusionsButtonText != null)
+                {
+                    ManageExclusionsButtonText.Text = _blacklistDisplayItems.Count > 0
+                        ? $"Manage Exclusions ({_blacklistDisplayItems.Count})"
+                        : "Exclude Applications…";
+                }
             }
+            catch { }
         }
 
         private async void PickInstalledAppsButton_Click(object sender, RoutedEventArgs e)

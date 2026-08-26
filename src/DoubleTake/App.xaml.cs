@@ -63,7 +63,7 @@ namespace QuickTranslator
                 }
 
                 m_window = new MainWindow();
-                m_window.Activate();
+                m_window.ShowAndActivate();
 
                 // Setup Tray Service
                 var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(m_window);

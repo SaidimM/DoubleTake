@@ -89,6 +89,7 @@ namespace QuickTranslator
                             _lastCtrlPressTime = DateTime.MinValue;
                             QuickTranslator.Helpers.DebugLog.Write("GlobalHotkey: Firing DoubleCtrlPressed event!");
                             DoubleCtrlPressed?.Invoke(null, EventArgs.Empty);
+                            return (IntPtr)1; // Consume the 2nd Ctrl release to avoid double-ctrl conflicts in apps like JetBrains IDEs
                         }
                         else
                         {

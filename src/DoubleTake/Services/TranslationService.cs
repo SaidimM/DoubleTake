@@ -21,22 +21,44 @@ namespace QuickTranslator
 
     public class TranslationService
     {
-        private static readonly HttpClient client = new HttpClient();
+        private static readonly HttpClient client;
 
         static TranslationService()
         {
-            client.Timeout = TimeSpan.FromSeconds(6);
+            var handler = new SocketsHttpHandler
+            {
+                AutomaticDecompression = System.Net.DecompressionMethods.All,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+                EnableMultipleHttp2Connections = true
+            };
+            client = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(6)
+            };
             client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+
+            // Pre-warm Bing authentication in background on startup and keep refreshed
+            _ = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try { await EnsureBingAuthAsync(System.Threading.CancellationToken.None); }
+                    catch { }
+                    await Task.Delay(TimeSpan.FromMinutes(30));
+                }
+            });
         }
 
-        public async Task<string> TranslateAsync(string text, string targetLang = null, string sourceLang = null)
+        public async Task<string> TranslateAsync(string text, string targetLang = null, string sourceLang = null, string engine = null, System.Threading.CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var config = SettingsManager.Current;
             targetLang ??= config.DefaultTargetLang;
             sourceLang ??= config.DefaultSourceLang;
 
-            string primaryEngine = config.ActiveEngine;
-            var primaryResult = await ExecuteEngineAsync(primaryEngine, text, targetLang, sourceLang);
+            string primaryEngine = !string.IsNullOrWhiteSpace(engine) ? engine : config.ActiveEngine;
+            var primaryResult = await ExecuteEngineAsync(primaryEngine, text, targetLang, sourceLang, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (primaryResult.Success && !string.IsNullOrWhiteSpace(primaryResult.TranslatedText))
             {
@@ -47,7 +69,9 @@ namespace QuickTranslator
             // Auto-fallback if enabled
             if (config.AutoFallback && config.FallbackEngine != "None" && config.FallbackEngine != primaryEngine)
             {
-                var fallbackResult = await ExecuteEngineAsync(config.FallbackEngine, text, targetLang, sourceLang);
+                cancellationToken.ThrowIfCancellationRequested();
+                var fallbackResult = await ExecuteEngineAsync(config.FallbackEngine, text, targetLang, sourceLang, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (fallbackResult.Success && !string.IsNullOrWhiteSpace(fallbackResult.TranslatedText))
                 {
                     HistoryService.AddEntry(text, fallbackResult.TranslatedText, targetLang, fallbackResult.EngineUsed, sourceLang);
@@ -58,7 +82,9 @@ namespace QuickTranslator
             // Ultimate fallback to Google if everything else fails
             if (primaryEngine != "Google")
             {
-                var googleFallback = await ExecuteGoogleAsync(text, targetLang, sourceLang);
+                cancellationToken.ThrowIfCancellationRequested();
+                var googleFallback = await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (googleFallback.Success && !string.IsNullOrWhiteSpace(googleFallback.TranslatedText))
                 {
                     HistoryService.AddEntry(text, googleFallback.TranslatedText, targetLang, "Google", sourceLang);
@@ -78,41 +104,55 @@ namespace QuickTranslator
             return res;
         }
 
-        private async Task<TranslationResult> ExecuteEngineAsync(string engine, string text, string targetLang, string sourceLang)
+        private async Task<TranslationResult> ExecuteEngineAsync(string engine, string text, string targetLang, string sourceLang, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 return engine switch
                 {
-                    "Google" => await ExecuteGoogleAsync(text, targetLang, sourceLang),
-                    "Bing" => await ExecuteBingAsync(text, targetLang, sourceLang),
-                    "DeepL" => await ExecuteDeepLAsync(text, targetLang, sourceLang),
-                    "Baidu" => await ExecuteBaiduAsync(text, targetLang, sourceLang),
-                    "Papago" => await ExecutePapagoAsync(text, targetLang, sourceLang),
-                    "Yandex" => await ExecuteYandexAsync(text, targetLang, sourceLang),
-                    "Youdao" => await ExecuteYoudaoAsync(text, targetLang, sourceLang),
-                    _ => await ExecuteGoogleAsync(text, targetLang, sourceLang)
+                    "Google" => await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken),
+                    "Bing" => await ExecuteBingAsync(text, targetLang, sourceLang, cancellationToken),
+                    "DeepL" => await ExecuteDeepLAsync(text, targetLang, sourceLang, cancellationToken),
+                    "Baidu" => await ExecuteBaiduAsync(text, targetLang, sourceLang, cancellationToken),
+                    "Papago" => await ExecutePapagoAsync(text, targetLang, sourceLang, cancellationToken),
+                    "Yandex" => await ExecuteYandexAsync(text, targetLang, sourceLang, cancellationToken),
+                    "Youdao" => await ExecuteYoudaoAsync(text, targetLang, sourceLang, cancellationToken),
+                    _ => await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken)
                 };
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                return new TranslationResult { Success = false, ErrorMessage = ex.Message, EngineUsed = engine };
+                if (cancellationToken.IsCancellationRequested)
+                    throw new OperationCanceledException(cancellationToken);
+
+                string message = ex.Message;
+                if (ex is TaskCanceledException || ex is TimeoutException || message.Contains("Timeout") || message.Contains("canceled"))
+                {
+                    message = "Translation request timed out. Please check your network connection.";
+                }
+                return new TranslationResult { Success = false, ErrorMessage = message, EngineUsed = engine };
             }
         }
 
         // 1. ── Google Translate (Free Built-in) ──────────────────────────────
-        private async Task<TranslationResult> ExecuteGoogleAsync(string text, string targetLang, string sourceLang)
+        private async Task<TranslationResult> ExecuteGoogleAsync(string text, string targetLang, string sourceLang, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var sl = NormalizeLangCode(sourceLang, "Google");
                 var tl = NormalizeLangCode(targetLang, "Google");
                 var url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sl}&tl={tl}&dt=t&q={HttpUtility.UrlEncode(text)}";
-                var response = await client.GetAsync(url);
+                var response = await client.GetAsync(url, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                     return new TranslationResult { Success = false, ErrorMessage = $"Google HTTP {(int)response.StatusCode}", EngineUsed = "Google" };
 
-                var json = await response.Content.ReadAsStringAsync();
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
                 using var parsed = JsonDocument.Parse(json);
                 var root = parsed.RootElement;
                 var sentences = root[0];
@@ -134,45 +174,199 @@ namespace QuickTranslator
 
                 return new TranslationResult { Success = true, TranslatedText = translated, EngineUsed = "Google" };
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
                 return new TranslationResult { Success = false, ErrorMessage = ex.Message, EngineUsed = "Google" };
             }
         }
 
         // 2. ── Bing / Edge Translator (Free Built-in) ────────────────────────
-        private async Task<TranslationResult> ExecuteBingAsync(string text, string targetLang, string sourceLang)
+        private static string _bingIg;
+        private static string _bingIid;
+        private static string _bingKey;
+        private static string _bingToken;
+        private static DateTime _bingTokenExpiry = DateTime.MinValue;
+        private static readonly System.Threading.SemaphoreSlim _bingLock = new System.Threading.SemaphoreSlim(1, 1);
+
+        private static async Task EnsureBingAuthAsync(System.Threading.CancellationToken cancellationToken)
         {
+            if (!string.IsNullOrEmpty(_bingKey) && !string.IsNullOrEmpty(_bingToken) && DateTime.UtcNow < _bingTokenExpiry)
+                return;
+
+            using var cts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromMilliseconds(2500));
+
             try
             {
-                var sl = NormalizeLangCode(sourceLang, "Bing");
-                var tl = NormalizeLangCode(targetLang, "Bing");
-                var url = $"https://edge.microsoft.com/translate/auth";
-                
-                // Fallback to Google web translation if direct Edge token fails
-                var gtxUrl = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sl}&tl={tl}&dt=t&q={HttpUtility.UrlEncode(text)}";
-                var response = await client.GetAsync(gtxUrl);
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    using var parsed = JsonDocument.Parse(json);
-                    var sb = new StringBuilder();
-                    foreach (var elem in parsed.RootElement[0].EnumerateArray())
-                    {
-                        sb.Append(elem[0].GetString());
-                    }
-                    return new TranslationResult { Success = true, TranslatedText = sb.ToString(), EngineUsed = "Bing" };
-                }
-                return new TranslationResult { Success = false, ErrorMessage = "Bing translation unavailable", EngineUsed = "Bing" };
+                await _bingLock.WaitAsync(cts.Token);
             }
-            catch (Exception ex)
+            catch { return; }
+
+            try
             {
-                return new TranslationResult { Success = false, ErrorMessage = ex.Message, EngineUsed = "Bing" };
+                if (!string.IsNullOrEmpty(_bingKey) && !string.IsNullOrEmpty(_bingToken) && DateTime.UtcNow < _bingTokenExpiry)
+                    return;
+
+                using var req = new HttpRequestMessage(HttpMethod.Get, "https://www.bing.com/translator");
+                req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
+
+                var resp = await client.SendAsync(req, cts.Token);
+                if (!resp.IsSuccessStatusCode) return;
+
+                var html = await resp.Content.ReadAsStringAsync(cts.Token);
+
+                var igMatch = System.Text.RegularExpressions.Regex.Match(html, @"IG:""([A-F0-9]+)""");
+                if (igMatch.Success) _bingIg = igMatch.Groups[1].Value;
+
+                var iidMatch = System.Text.RegularExpressions.Regex.Match(html, @"data-iid=""([^""]+)""");
+                if (iidMatch.Success) _bingIid = iidMatch.Groups[1].Value;
+
+                var abuseMatch = System.Text.RegularExpressions.Regex.Match(html, @"params_AbusePreventionHelper\s*=\s*\[([0-9]+),\""([^\""]+)\""");
+                if (abuseMatch.Success)
+                {
+                    _bingKey = abuseMatch.Groups[1].Value;
+                    _bingToken = abuseMatch.Groups[2].Value;
+                    _bingTokenExpiry = DateTime.UtcNow.AddMinutes(45);
+                }
+            }
+            catch { }
+            finally
+            {
+                _bingLock.Release();
             }
         }
 
+        private async Task<TranslationResult> ExecuteBingAsync(string text, string targetLang, string sourceLang, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var sl = NormalizeBingLang(sourceLang);
+                var tl = NormalizeBingLang(targetLang);
+
+                await EnsureBingAuthAsync(cancellationToken);
+
+                if (string.IsNullOrEmpty(_bingKey) || string.IsNullOrEmpty(_bingToken))
+                {
+                    return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
+                }
+
+                var url = $"https://www.bing.com/ttranslatev3?isVertical=1&IG={_bingIg}&IID={_bingIid ?? "translator.5023"}";
+                var form = new Dictionary<string, string>
+                {
+                    { "text", text },
+                    { "fromLang", sl },
+                    { "to", tl },
+                    { "key", _bingKey },
+                    { "token", _bingToken }
+                };
+
+                using var req = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new FormUrlEncodedContent(form)
+                };
+                req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
+
+                var resp = await client.SendAsync(req, cancellationToken);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _bingTokenExpiry = DateTime.MinValue;
+                    return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
+                }
+
+                var json = await resp.Content.ReadAsStringAsync(cancellationToken);
+                using var parsed = JsonDocument.Parse(json);
+                var root = parsed.RootElement;
+
+                // Check for status code 205 (token expired)
+                if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("statusCode", out var statusProp) && statusProp.GetInt32() == 205)
+                {
+                    _bingTokenExpiry = DateTime.MinValue;
+                    await EnsureBingAuthAsync(cancellationToken);
+                    if (!string.IsNullOrEmpty(_bingKey) && !string.IsNullOrEmpty(_bingToken))
+                    {
+                        var retryUrl = $"https://www.bing.com/ttranslatev3?isVertical=1&IG={_bingIg}&IID={_bingIid ?? "translator.5023"}";
+                        var retryForm = new Dictionary<string, string>
+                        {
+                            { "text", text },
+                            { "fromLang", sl },
+                            { "to", tl },
+                            { "key", _bingKey },
+                            { "token", _bingToken }
+                        };
+                        using var retryReq = new HttpRequestMessage(HttpMethod.Post, retryUrl) { Content = new FormUrlEncodedContent(retryForm) };
+                        retryReq.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
+                        var retryResp = await client.SendAsync(retryReq, cancellationToken);
+                        if (retryResp.IsSuccessStatusCode)
+                        {
+                            var retryJson = await retryResp.Content.ReadAsStringAsync(cancellationToken);
+                            using var retryParsed = JsonDocument.Parse(retryJson);
+                            var resultText = ExtractBingText(retryParsed.RootElement);
+                            if (!string.IsNullOrWhiteSpace(resultText))
+                                return new TranslationResult { Success = true, TranslatedText = resultText, EngineUsed = "Bing" };
+                        }
+                    }
+                    return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
+                }
+
+                string translated = ExtractBingText(root);
+                if (string.IsNullOrWhiteSpace(translated))
+                {
+                    return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
+                }
+
+                return new TranslationResult { Success = true, TranslatedText = translated, EngineUsed = "Bing" };
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
+                return await ExecuteGoogleAsync(text, targetLang, sourceLang, cancellationToken);
+            }
+        }
+
+        private static string ExtractBingText(JsonElement root)
+        {
+            try
+            {
+                if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
+                {
+                    var item = root[0];
+                    if (item.TryGetProperty("translations", out var transArr) && transArr.GetArrayLength() > 0)
+                    {
+                        return transArr[0].GetProperty("text").GetString();
+                    }
+                }
+                else if (root.ValueKind == JsonValueKind.Object)
+                {
+                    if (root.TryGetProperty("translations", out var transArr) && transArr.GetArrayLength() > 0)
+                    {
+                        return transArr[0].GetProperty("text").GetString();
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private static string NormalizeBingLang(string lang)
+        {
+            if (string.IsNullOrWhiteSpace(lang) || lang == "auto") return "auto-detect";
+            if (lang.Equals("zh-CN", StringComparison.OrdinalIgnoreCase) || lang.Equals("zh", StringComparison.OrdinalIgnoreCase)) return "zh-Hans";
+            if (lang.Equals("zh-TW", StringComparison.OrdinalIgnoreCase) || lang.Equals("zh-HK", StringComparison.OrdinalIgnoreCase)) return "zh-Hant";
+            return lang.Split('-')[0];
+        }
+
         // 3. ── DeepL (API Key) ──────────────────────────────────────────────
-        private async Task<TranslationResult> ExecuteDeepLAsync(string text, string targetLang, string sourceLang)
+        private async Task<TranslationResult> ExecuteDeepLAsync(string text, string targetLang, string sourceLang, System.Threading.CancellationToken cancellationToken = default)
         {
             var config = SettingsManager.Current;
             if (string.IsNullOrWhiteSpace(config.DeepLApiKey))
@@ -180,6 +374,7 @@ namespace QuickTranslator
 
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var endpoint = config.DeepLIsPro ? "https://api.deepl.com/v2/translate" : "https://api-free.deepl.com/v2/translate";
                 using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
                 request.Headers.Add("Authorization", $"DeepL-Auth-Key {config.DeepLApiKey.Trim()}");
@@ -195,8 +390,8 @@ namespace QuickTranslator
                 });
                 request.Content = content;
 
-                var response = await client.SendAsync(request);
-                var body = await response.Content.ReadAsStringAsync();
+                var response = await client.SendAsync(request, cancellationToken);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -207,14 +402,19 @@ namespace QuickTranslator
                 var translated = doc.RootElement.GetProperty("translations")[0].GetProperty("text").GetString();
                 return new TranslationResult { Success = true, TranslatedText = translated, EngineUsed = "DeepL" };
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
                 return new TranslationResult { Success = false, ErrorMessage = ex.Message, EngineUsed = "DeepL" };
             }
         }
 
         // 4. ── Baidu Fanyi (AppID + SecretKey) ──────────────────────────────
-        private async Task<TranslationResult> ExecuteBaiduAsync(string text, string targetLang, string sourceLang)
+        private async Task<TranslationResult> ExecuteBaiduAsync(string text, string targetLang, string sourceLang, System.Threading.CancellationToken cancellationToken = default)
         {
             var config = SettingsManager.Current;
             if (string.IsNullOrWhiteSpace(config.BaiduAppId) || string.IsNullOrWhiteSpace(config.BaiduSecretKey))
@@ -222,6 +422,7 @@ namespace QuickTranslator
 
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string salt = new Random().Next(100000, 999999).ToString();
                 string rawSign = config.BaiduAppId.Trim() + text + salt + config.BaiduSecretKey.Trim();
                 string sign = ComputeMD5(rawSign);
@@ -230,8 +431,8 @@ namespace QuickTranslator
                 string to = NormalizeBaiduLang(targetLang);
 
                 var url = $"https://fanyi-api.baidu.com/api/trans/vip/translate?q={HttpUtility.UrlEncode(text)}&from={from}&to={to}&appid={config.BaiduAppId.Trim()}&salt={salt}&sign={sign}";
-                var response = await client.GetAsync(url);
-                var json = await response.Content.ReadAsStringAsync();
+                var response = await client.GetAsync(url, cancellationToken);
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 using var doc = JsonDocument.Parse(json);
                 if (doc.RootElement.TryGetProperty("error_code", out var errCode))
@@ -250,14 +451,19 @@ namespace QuickTranslator
 
                 return new TranslationResult { Success = true, TranslatedText = sb.ToString(), EngineUsed = "Baidu" };
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
                 return new TranslationResult { Success = false, ErrorMessage = ex.Message, EngineUsed = "Baidu" };
             }
         }
 
         // 5. ── Naver Papago (ClientID + ClientSecret) ────────────────────────
-        private async Task<TranslationResult> ExecutePapagoAsync(string text, string targetLang, string sourceLang)
+        private async Task<TranslationResult> ExecutePapagoAsync(string text, string targetLang, string sourceLang, System.Threading.CancellationToken cancellationToken = default)
         {
             var config = SettingsManager.Current;
             if (string.IsNullOrWhiteSpace(config.PapagoClientId) || string.IsNullOrWhiteSpace(config.PapagoClientSecret))
@@ -265,6 +471,7 @@ namespace QuickTranslator
 
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var from = sourceLang == "auto" ? "auto" : (sourceLang.StartsWith("zh") ? "zh-CN" : sourceLang);
                 var to = targetLang.StartsWith("zh") ? "zh-CN" : (targetLang == "ko" ? "ko" : targetLang);
 
@@ -279,8 +486,8 @@ namespace QuickTranslator
                     new KeyValuePair<string, string>("text", text)
                 });
 
-                var response = await client.SendAsync(request);
-                var body = await response.Content.ReadAsStringAsync();
+                var response = await client.SendAsync(request, cancellationToken);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
                 if (!response.IsSuccessStatusCode)
                     return new TranslationResult { Success = false, ErrorMessage = $"Papago error ({(int)response.StatusCode}): {body}", EngineUsed = "Papago" };
 
@@ -288,14 +495,19 @@ namespace QuickTranslator
                 var resultText = doc.RootElement.GetProperty("message").GetProperty("result").GetProperty("translatedText").GetString();
                 return new TranslationResult { Success = true, TranslatedText = resultText, EngineUsed = "Papago" };
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
                 return new TranslationResult { Success = false, ErrorMessage = ex.Message, EngineUsed = "Papago" };
             }
         }
 
         // 6. ── Yandex Translate (API Key) ───────────────────────────────────
-        private async Task<TranslationResult> ExecuteYandexAsync(string text, string targetLang, string sourceLang)
+        private async Task<TranslationResult> ExecuteYandexAsync(string text, string targetLang, string sourceLang, System.Threading.CancellationToken cancellationToken = default)
         {
             var config = SettingsManager.Current;
             if (string.IsNullOrWhiteSpace(config.YandexApiKey))
@@ -303,6 +515,7 @@ namespace QuickTranslator
 
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var tl = targetLang.Split('-')[0];
                 using var request = new HttpRequestMessage(HttpMethod.Post, "https://translate.api.cloud.yandex.net/translate/v2/translate");
                 request.Headers.Add("Authorization", $"Api-Key {config.YandexApiKey.Trim()}");
@@ -314,8 +527,8 @@ namespace QuickTranslator
                 });
                 request.Content = new StringContent(reqBody, Encoding.UTF8, "application/json");
 
-                var response = await client.SendAsync(request);
-                var body = await response.Content.ReadAsStringAsync();
+                var response = await client.SendAsync(request, cancellationToken);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
                 if (!response.IsSuccessStatusCode)
                     return new TranslationResult { Success = false, ErrorMessage = $"Yandex error: {body}", EngineUsed = "Yandex" };
 
@@ -323,14 +536,19 @@ namespace QuickTranslator
                 var resultText = doc.RootElement.GetProperty("translations")[0].GetProperty("text").GetString();
                 return new TranslationResult { Success = true, TranslatedText = resultText, EngineUsed = "Yandex" };
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
                 return new TranslationResult { Success = false, ErrorMessage = ex.Message, EngineUsed = "Yandex" };
             }
         }
 
         // 7. ── Youdao Translate (AppKey + AppSecret) ────────────────────────
-        private async Task<TranslationResult> ExecuteYoudaoAsync(string text, string targetLang, string sourceLang)
+        private async Task<TranslationResult> ExecuteYoudaoAsync(string text, string targetLang, string sourceLang, System.Threading.CancellationToken cancellationToken = default)
         {
             var config = SettingsManager.Current;
             if (string.IsNullOrWhiteSpace(config.YoudaoAppKey) || string.IsNullOrWhiteSpace(config.YoudaoAppSecret))
@@ -338,6 +556,7 @@ namespace QuickTranslator
 
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string curtime = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
                 string salt = Guid.NewGuid().ToString();
                 string input = text.Length <= 20 ? text : (text.Substring(0, 10) + text.Length + text.Substring(text.Length - 10));
@@ -364,8 +583,8 @@ namespace QuickTranslator
                     Content = new FormUrlEncodedContent(pairs)
                 };
 
-                var response = await client.SendAsync(request);
-                var body = await response.Content.ReadAsStringAsync();
+                var response = await client.SendAsync(request, cancellationToken);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 using var doc = JsonDocument.Parse(body);
                 var errorCode = doc.RootElement.GetProperty("errorCode").GetString();
@@ -377,8 +596,13 @@ namespace QuickTranslator
                 var trans = doc.RootElement.GetProperty("translation")[0].GetString();
                 return new TranslationResult { Success = true, TranslatedText = trans, EngineUsed = "Youdao" };
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
                 return new TranslationResult { Success = false, ErrorMessage = ex.Message, EngineUsed = "Youdao" };
             }
         }

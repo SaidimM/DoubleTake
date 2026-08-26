@@ -127,8 +127,8 @@ namespace QuickTranslator
             SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
             DebugLog.Write($"ClipboardHelper: Sent SendInput(Ctrl+C), seqBefore={seqBefore}");
 
-            // Poll for clipboard sequence change (up to 350ms for heavy IDEs like IntelliJ/PyCharm)
-            for (int i = 0; i < 25; i++)
+            // Poll for clipboard sequence change (up to 450ms for heavy IDEs like IntelliJ/PyCharm)
+            for (int i = 0; i < 30; i++)
             {
                 await Task.Delay(15);
                 uint seqAfter = GetClipboardSequenceNumber();
@@ -140,17 +140,11 @@ namespace QuickTranslator
                     {
                         return text.Trim();
                     }
+                    return string.Empty;
                 }
             }
 
-            // Fallback: Check current clipboard in case seq didn't update but text is present
-            string fallbackText = GetCurrentClipboardText();
-            DebugLog.Write($"ClipboardHelper: Seq did not change ({seqBefore}). Current clipboard text='{fallbackText}'");
-            if (!string.IsNullOrWhiteSpace(fallbackText))
-            {
-                return fallbackText.Trim();
-            }
-
+            DebugLog.Write($"ClipboardHelper: Seq did not change ({seqBefore}). No text copied.");
             return string.Empty;
         }
 

@@ -12,6 +12,7 @@ obj/
 *.appxbundle
 *.msixbundle
 PackageOutput/
+AppPackages/
 crash.log
 
 ## OS Files

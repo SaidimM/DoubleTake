@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -18,6 +19,8 @@ namespace QuickTranslator
         private readonly TranslationService _translator = new TranslationService();
         private IntPtr _hWnd;
         private bool _isPinned = false;
+        private bool _isVisible = false;
+        private CancellationTokenSource _cts;
         private string _lastSourceText = string.Empty;
         private bool _isTranslating = false;
         private POINT _anchorPoint;
@@ -92,13 +95,13 @@ namespace QuickTranslator
             // Auto-dismiss on click outside (window deactivation) unless pinned
             this.Activated += (sender, args) =>
             {
-                QuickTranslator.Helpers.DebugLog.Write($"QuickPopup.Activated: state={args.WindowActivationState}, isPinned={_isPinned}, elapsedSinceShown={(DateTime.UtcNow - _lastShownTime).TotalMilliseconds:F0}ms");
+                QuickTranslator.Helpers.DebugLog.Write($"QuickPopup.Activated: state={args.WindowActivationState}, isPinned={_isPinned}, isVisible={_isVisible}, elapsedSinceShown={(DateTime.UtcNow - _lastShownTime).TotalMilliseconds:F0}ms");
                 if (args.WindowActivationState == WindowActivationState.Deactivated)
                 {
-                    if (!_isPinned)
+                    if (!_isPinned && _isVisible)
                     {
-                        // Ignore immediate deactivation within 750ms of display
-                        if ((DateTime.UtcNow - _lastShownTime).TotalMilliseconds < 750)
+                        // Ignore immediate deactivation within 250ms of display (grace period for window show transition)
+                        if ((DateTime.UtcNow - _lastShownTime).TotalMilliseconds < 250)
                         {
                             QuickTranslator.Helpers.DebugLog.Write("QuickPopup.Activated: Deactivation ignored due to grace period.");
                             return;
@@ -189,6 +192,8 @@ namespace QuickTranslator
         {
             try
             {
+                if (!_isVisible) return;
+
                 if (_hWnd == IntPtr.Zero)
                     _hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
 
@@ -245,16 +250,30 @@ namespace QuickTranslator
         // ── Main Translation Action ──────────────────────────────────────────
         public async void ShowAndTranslate(string text)
         {
+            _isVisible = true;
             _lastShownTime = DateTime.UtcNow;
             _lastSourceText = text;
             _hasAnchor = false; // Capture fresh cursor anchor point
             GetCursorPos(out _anchorPoint);
             _hasAnchor = true;
 
+            // Cancel any ongoing translation request
+            try
+            {
+                _cts?.Cancel();
+                _cts?.Dispose();
+            }
+            catch { }
+            _cts = new CancellationTokenSource();
+            var ct = _cts.Token;
+
             SyncActiveEngineCombo();
 
             string defaultTarget = ResolveTargetCodeForText(text);
             PopulateTargetLanguages(defaultTarget);
+
+            string initialEngine = (EngineQuickCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? SettingsManager.Current.ActiveEngine;
+            TranslateStatusText.Text = $"{initialEngine} Engine · Translating…";
 
             SourceTextBlock.Text = text;
             TranslatedTextBlock.Text = "Translating…";
@@ -267,7 +286,7 @@ namespace QuickTranslator
             // Immediate initial display near anchor
             ApplyElasticSizingAndPosition();
 
-            await ReTranslateAsync();
+            await ReTranslateAsync(ct);
         }
 
         private string ResolveTargetCodeForText(string text)
@@ -286,9 +305,9 @@ namespace QuickTranslator
             return "zh-CN";
         }
 
-        private async Task ReTranslateAsync()
+        private async Task ReTranslateAsync(CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(_lastSourceText) || _isTranslating) return;
+            if (string.IsNullOrWhiteSpace(_lastSourceText) || _isTranslating || !_isVisible) return;
 
             _isTranslating = true;
             LoadingRing.IsActive = true;
@@ -297,20 +316,38 @@ namespace QuickTranslator
 
             string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "zh-CN";
             string engine = (EngineQuickCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? SettingsManager.Current.ActiveEngine;
+            TranslateStatusText.Text = $"{engine} Engine · Translating…";
 
             var sw = Stopwatch.StartNew();
             try
             {
-                string result = await _translator.TranslateAsync(_lastSourceText, targetLang);
+                string result = await _translator.TranslateAsync(_lastSourceText, targetLang, null, engine, ct);
                 sw.Stop();
+
+                if (ct.IsCancellationRequested || !_isVisible)
+                {
+                    QuickTranslator.Helpers.DebugLog.Write("QuickPopup.ReTranslateAsync: Request cancelled or popup dismissed. Suppressing UI update.");
+                    return;
+                }
 
                 TranslatedTextBlock.Text = result ?? "No translation available.";
                 TranslateStatusText.Text = $"{engine} Engine · {sw.ElapsedMilliseconds}ms";
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x4A, 0xDE, 0x80));
             }
+            catch (OperationCanceledException)
+            {
+                QuickTranslator.Helpers.DebugLog.Write("QuickPopup.ReTranslateAsync: Operation canceled.");
+                return;
+            }
             catch (Exception ex)
             {
                 sw.Stop();
+                if (ct.IsCancellationRequested || !_isVisible)
+                {
+                    QuickTranslator.Helpers.DebugLog.Write($"QuickPopup.ReTranslateAsync: Errored after dismiss. Suppressing popup re-open. Error={ex.Message}");
+                    return;
+                }
+
                 TranslatedTextBlock.Text = $"Error: {ex.Message}";
                 TranslateStatusText.Text = $"{engine} Engine · Error";
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0xEF, 0x44, 0x44));
@@ -321,11 +358,12 @@ namespace QuickTranslator
                 LoadingRing.Visibility = Visibility.Collapsed;
                 _isTranslating = false;
 
-                // Adjust elastic size smoothly at the same anchored location
-                ApplyElasticSizingAndPosition();
-
-                // Auto-scroll down to translated content if text is long/scrollable
-                AutoScrollToTranslation();
+                // Adjust elastic size only if popup is still visible and request was not cancelled
+                if (_isVisible && !ct.IsCancellationRequested)
+                {
+                    ApplyElasticSizingAndPosition();
+                    AutoScrollToTranslation();
+                }
             }
         }
 
@@ -349,23 +387,27 @@ namespace QuickTranslator
         // ── Event Handlers ───────────────────────────────────────────────────
         private async void TargetLangCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (this.Content == null || _isTranslating) return;
+            if (this.Content == null || _isTranslating || !_isVisible) return;
 
             if (TargetLangCombo.SelectedItem is ComboBoxItem item && item.Tag is string langCode)
             {
                 SettingsManager.RecordLanguageUsed(langCode);
-                await ReTranslateAsync();
+                try { _cts?.Cancel(); _cts?.Dispose(); } catch { }
+                _cts = new CancellationTokenSource();
+                await ReTranslateAsync(_cts.Token);
             }
         }
 
         private async void EngineQuickCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (this.Content == null || _isTranslating) return;
+            if (this.Content == null || _isTranslating || !_isVisible) return;
             if (EngineQuickCombo.SelectedItem is ComboBoxItem item && item.Tag is string engine)
             {
                 SettingsManager.Current.ActiveEngine = engine;
                 SettingsManager.SaveSettings();
-                await ReTranslateAsync();
+                try { _cts?.Cancel(); _cts?.Dispose(); } catch { }
+                _cts = new CancellationTokenSource();
+                await ReTranslateAsync(_cts.Token);
             }
         }
 
@@ -494,7 +536,17 @@ namespace QuickTranslator
         {
             try
             {
+                _isVisible = false;
                 _hasAnchor = false;
+
+                try
+                {
+                    _cts?.Cancel();
+                    _cts?.Dispose();
+                    _cts = null;
+                }
+                catch { }
+
                 if (_hWnd == IntPtr.Zero)
                     _hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
                 ShowWindow(_hWnd, SW_HIDE);
