@@ -23,6 +23,11 @@
       <stop offset="100%" stop-color="#43a000"/>
     </linearGradient>
 
+    <linearGradient id="tileWenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2899F5"/>
+      <stop offset="100%" stop-color="#00B5F1"/>
+    </linearGradient>
+
     <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#a855f7"/>
       <stop offset="100%" stop-color="#7c3aed"/>
@@ -63,7 +68,7 @@
   </style>
 
   <!-- Stage Background Canvas -->
-  <rect width="800" height="520" rx="16" fill="url(#bgGrad)"/>
+  <rect width="800" height="520" fill="url(#bgGrad)"/>
   
   <!-- Subtle Background Grid Accents -->
   <g opacity="0.08" fill="#ffffff">
@@ -300,9 +305,14 @@
         
         <!-- Header Bar -->
         <g transform="translate(16, 16)">
-          <rect x="0" y="0" width="20" height="20" rx="5" fill="url(#starGrad)"/>
-          <text x="10" y="14" font-size="11" fill="#ffffff" text-anchor="middle">★</text>
-          <text class="nunito" x="28" y="15" font-size="13.5" font-weight="700" fill="#f3f4f6">DoubleTake</text>
+          <!-- DoubleTake App Icon: Standalone A/文 Tiles -->
+          <g transform="translate(0, 0)">
+            <rect x="0" y="0.5" width="11.5" height="13" rx="2.5" fill="#0078D4"/>
+            <text x="5.75" y="10" font-family="'Segoe UI', -apple-system, sans-serif" font-size="8.5" font-weight="700" fill="#ffffff" text-anchor="middle">A</text>
+            <rect x="7.5" y="4.5" width="12" height="13.5" rx="2.5" fill="url(#tileWenGrad)"/>
+            <text x="13.5" y="14.8" font-family="'Microsoft YaHei', 'Segoe UI', sans-serif" font-size="8.5" font-weight="700" fill="#ffffff" text-anchor="middle">文</text>
+          </g>
+          <text class="nunito" x="26" y="15" font-size="13.5" font-weight="700" fill="#f3f4f6">DoubleTake</text>
           
           <!-- Active Engine Dropdown Pill -->
           <rect x="254" y="0" width="60" height="20" rx="5" fill="rgba(255,255,255,0.08)"/>

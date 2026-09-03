@@ -25,10 +25,6 @@ jobs:
       run: |
         dotnet publish src/DoubleTake/DoubleTake.csproj -c Release -r win-x64 --self-contained true -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o publish-unpackaged
 
-    - name: Create Portable Zip Package
-      run: |
-        Compress-Archive -Path publish-unpackaged\* -DestinationPath DoubleTake-Portable-win-x64.zip -Force
-
     - name: Compile Inno Setup Installer (.exe)
       run: |
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
@@ -37,8 +33,6 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: |
-          ReleaseOutput/DoubleTake-Setup-*.exe
-          DoubleTake-Portable-win-x64.zip
+        files: ReleaseOutput/DoubleTake-Setup-*.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

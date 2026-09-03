@@ -1,89 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <defs>
-    <!-- Background Gradient -->
-    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
-      <stop offset="0%" stop-color="#141E28" />
-      <stop offset="60%" stop-color="#0A0E14" />
-      <stop offset="100%" stop-color="#040608" />
-    </radialGradient>
+<svg width="504" height="504" viewBox="0 0 504 504" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Elevation drop shadow on the front tile (文) over the back tile (A) -->
+  <filter id="tile_elevation_shadow" x="0" y="0" width="504" height="504" filterUnits="userSpaceOnUse">
+    <feDropShadow dx="-5" dy="10" stdDeviation="12" flood-color="#001830" flood-opacity="0.38"/>
+    <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.12"/>
+  </filter>
 
-    <!-- Ambient Emerald Glow -->
-    <radialGradient id="emeraldGlow" cx="65%" cy="40%" r="50%">
-      <stop offset="0%" stop-color="#10B981" stop-opacity="0.35" />
-      <stop offset="100%" stop-color="#10B981" stop-opacity="0" />
-    </radialGradient>
+  <!-- Ground drop shadow under the back tile (A) -->
+  <filter id="back_tile_ground_shadow" x="0" y="0" width="504" height="504" filterUnits="userSpaceOnUse">
+    <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#002447" flood-opacity="0.28"/>
+  </filter>
 
-    <!-- Frosted Slate Gradient (Loop 1) -->
-    <linearGradient id="slateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#CBD5E1" stop-opacity="0.75" />
-      <stop offset="30%" stop-color="#94A3B8" stop-opacity="0.45" />
-      <stop offset="70%" stop-color="#64748B" stop-opacity="0.3" />
-      <stop offset="100%" stop-color="#334155" stop-opacity="0.5" />
-    </linearGradient>
+  <!-- Exact linear gradient from Frame 3.svg for tile 文 -->
+  <linearGradient id="paint1_linear_18_33" x1="305" y1="187" x2="305" y2="331" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#2899F5"/>
+    <stop offset="1" stop-color="#00B5F1"/>
+  </linearGradient>
+</defs>
 
-    <!-- Neo-Emerald Neon Gradient (Loop 2) -->
-    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6EE7B7" />
-      <stop offset="35%" stop-color="#34D399" />
-      <stop offset="70%" stop-color="#10B981" />
-      <stop offset="100%" stop-color="#059669" />
-    </linearGradient>
-
-    <!-- Glass Highlights -->
-    <linearGradient id="glassHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6" />
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
-    </linearGradient>
-
-    <!-- Drop Shadow Filters -->
-    <filter id="neonBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="16" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
-    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="8" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
-  </defs>
-
-  <!-- Base App Background Rounded Squircle -->
-  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGrad)" stroke="#1E293B" stroke-width="2" />
-  
-  <!-- Subtle Ambient Core Lighting -->
-  <circle cx="310" cy="220" r="170" fill="url(#emeraldGlow)" />
-
-  <!-- ── 1. Frosted Slate / Titanium Loop (Back Layer) ── -->
-  <g transform="translate(256, 256) rotate(-45) translate(-256, -256)">
-    <!-- Outer Glow / Soft Edge -->
-    <rect x="156" y="96" width="200" height="320" rx="100" 
-          fill="none" stroke="url(#slateGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"
-          opacity="0.9" />
-    
-    <!-- Inner Rim Highlight -->
-    <rect x="156" y="96" width="200" height="320" rx="100" 
-          fill="none" stroke="#F8FAFC" stroke-width="2" stroke-opacity="0.4" />
+<!-- Group scaled & centered on canvas -->
+<g transform="translate(252, 252) scale(1.85) translate(-252, -246)">
+  <!-- Back Tile: Latin 'A' with ground shadow -->
+  <g filter="url(#back_tile_ground_shadow)">
+    <rect x="133" y="161" width="132" height="144" rx="16" fill="#0078D4"/>
+    <path d="M186.068 256.5H177.068L193.455 209.955H203.864L220.273 256.5H211.273L198.841 219.5H198.477L186.068 256.5ZM186.364 238.25H210.909V245.023H186.364V238.25Z" fill="white"/>
   </g>
 
-  <!-- ── 2. Neo-Emerald Neon Loop (Foreground Interlocking Layer) ── -->
-  <g transform="translate(256, 256) rotate(45) translate(-256, -256)" filter="url(#softGlow)">
-    <!-- Neon Diffuse Aura -->
-    <rect x="156" y="96" width="200" height="320" rx="100" 
-          fill="none" stroke="#10B981" stroke-width="52" opacity="0.4" filter="url(#neonBlur)" />
-    
-    <!-- Solid Vibrant Core Loop -->
-    <rect x="156" y="96" width="200" height="320" rx="100" 
-          fill="none" stroke="url(#emeraldGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" />
-
-    <!-- Specular Highlight Line -->
-    <rect x="160" y="100" width="192" height="312" rx="96" 
-          fill="none" stroke="#A7F3D0" stroke-width="3" stroke-opacity="0.8" />
+  <!-- Front Tile: Chinese '文' with elevation shadow -->
+  <g filter="url(#tile_elevation_shadow)">
+    <rect x="239" y="187" width="132" height="144" rx="16" fill="url(#paint1_linear_18_33)"/>
+    <path d="M317.288 242.372L325.48 244.804C322.792 252.484 319.315 259.14 315.048 264.772C310.781 270.404 305.704 275.161 299.816 279.044C293.971 282.884 287.208 286.02 279.528 288.452C279.272 287.769 278.845 286.959 278.248 286.02C277.651 285.081 277.032 284.143 276.392 283.204C275.795 282.308 275.219 281.561 274.664 280.964C282.045 279.001 288.509 276.335 294.056 272.964C299.603 269.593 304.296 265.412 308.136 260.42C311.976 255.385 315.027 249.369 317.288 242.372ZM292.52 242.884C294.696 249.241 297.704 254.937 301.544 259.972C305.384 265.007 310.12 269.273 315.752 272.772C321.427 276.271 328.04 278.873 335.592 280.58C334.995 281.177 334.333 281.945 333.608 282.884C332.925 283.823 332.264 284.761 331.624 285.7C330.984 286.681 330.472 287.535 330.088 288.26C322.109 286.212 315.24 283.225 309.48 279.3C303.72 275.332 298.835 270.511 294.824 264.836C290.856 259.161 287.528 252.612 284.84 245.188L292.52 242.884ZM275.816 238.276H334.44V245.764H275.816V238.276ZM301.032 228.1H308.904V242.82H301.032V228.1Z" fill="white"/>
   </g>
-
-  <!-- ── 3. Interlocking Glass Intersection Refraction ── -->
-  <g opacity="0.85">
-    <ellipse cx="256" cy="256" rx="42" ry="42" fill="#047857" opacity="0.4" />
-    <path d="M 230 240 Q 256 210 282 240 Q 256 270 230 240 Z" fill="#6EE7B7" opacity="0.6" />
-    <circle cx="256" cy="256" r="3" fill="#FFFFFF" opacity="0.9" />
-  </g>
-
+</g>
 </svg>
