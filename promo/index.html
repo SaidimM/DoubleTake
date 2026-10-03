@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DoubleTake - Product Launch Story Animation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Segoe+UI+Variable+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 22, 34, 0.85);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.4);
+      --accent-green: #4ade80;
+      --accent-red: #f43f5e;
+      --accent-orange: #fb923c;
+      --border: rgba(255, 255, 255, 0.1);
+      --border-focus: rgba(56, 189, 248, 0.5);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 40%);
+    }
+
+    /* Container for the 16:9 Canvas */
+    .stage-wrapper {
+      position: relative;
+      width: 95vw;
+      max-width: 1280px;
+      aspect-ratio: 16 / 9;
+      background: #0d121f;
+      border-radius: 16px;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Ambient Banner */
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: linear-gradient(180deg, rgba(13, 18, 31, 0.9) 0%, rgba(13, 18, 31, 0) 100%);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .brand-tag {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: #fff;
+    }
+
+    .brand-icon {
+      width: 22px;
+      height: 22px;
+      position: relative;
+    }
+    .brand-tile-a {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 14px;
+      height: 15px;
+      background: #0078d4;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .brand-tile-wen {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 14px;
+      height: 15px;
+      background: linear-gradient(135deg, #2899f5, #00b5f1);
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .scene-pill {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+    }
+    .scene-pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Main Video Stage */
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 45%, #151d30 0%, #090e1a 100%);
+    }
+
+    /* Scene Container */
+    .scene {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: scale(0.98);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 40px;
+    }
+
+    .scene.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    /* Scene Titles */
+    .scene-header {
+      text-align: center;
+      margin-bottom: 24px;
+      z-index: 20;
+    }
+    .scene-eyebrow {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+    .eyebrow-red { color: #f87171; text-shadow: 0 0 20px rgba(248, 113, 113, 0.3); }
+    .eyebrow-blue { color: #38bdf8; text-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
+    .eyebrow-green { color: #4ade80; text-shadow: 0 0 20px rgba(74, 222, 128, 0.3); }
+
+    .scene-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+    .scene-subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+
+    /* Common Mock Window Styles */
+    .mock-window {
+      position: relative;
+      background: #1e2433;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.4s ease;
+    }
+
+    .window-header {
+      height: 36px;
+      background: #161b26;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 7px;
+    }
+    .window-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .window-title {
+      font-size: 12px;
+      color: #94a3b8;
+      font-family: 'Fira Code', monospace;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* SCENE 1 & 3: IDE & Text Document */
+    .editor-window {
+      width: 760px;
+      height: 380px;
+    }
+
+    .editor-body {
+      padding: 24px 30px;
+      font-family: 'Fira Code', monospace;
+      font-size: 14.5px;
+      line-height: 1.8;
+      color: #e2e8f0;
+      position: relative;
+      background: #111622;
+      flex: 1;
+    }
+
+    .code-comment { color: #64748b; }
+    .code-keyword { color: #f43f5e; font-weight: 600; }
+    .code-fn { color: #38bdf8; }
+    .code-string { color: #34d399; }
+    .code-variable { color: #fbbf24; }
+
+    .target-phrase-wrapper {
+      position: relative;
+      display: inline-block;
+      padding: 1px 4px;
+      border-radius: 4px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .target-phrase-wrapper.selected {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
+    }
+
+    /* Animated Virtual Mouse Cursor */
+    .v-cursor {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      pointer-events: none;
+      z-index: 999;
+      transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+    }
+    .v-cursor svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* SCENE 2: The Browser Chaos Window */
+    .browser-window {
+      width: 820px;
+      height: 400px;
+      position: relative;
+    }
+
+    .browser-tabs {
+      display: flex;
+      align-items: flex-end;
+      height: 38px;
+      background: #131722;
+      padding: 0 10px;
+      gap: 4px;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .browser-tab {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 6px 12px;
+      font-size: 11px;
+      color: #94a3b8;
+      border-radius: 8px 8px 0 0;
+      white-space: nowrap;
+      max-width: 105px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .browser-tab.active {
+      background: #1e2433;
+      color: #fff;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: none;
+    }
+
+    .browser-address-bar {
+      height: 40px;
+      background: #1a202c;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .url-input {
+      flex: 1;
+      height: 26px;
+      background: #11151f;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 11.5px;
+      color: #93c5fd;
+    }
+
+    .browser-content {
+      padding: 24px;
+      background: #111622;
+      flex: 1;
+      display: flex;
+      gap: 20px;
+    }
+
+    .translate-panel {
+      flex: 1;
+      background: #182030;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-lang {
+      font-size: 12px;
+      font-weight: 600;
+      color: #38bdf8;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 6px;
+    }
+
+    .panel-text {
+      font-size: 13.5px;
+      color: #e2e8f0;
+      line-height: 1.6;
+    }
+
+    /* Frustration Badge / Stopwatch */
+    .stopwatch-overlay {
+      position: absolute;
+      top: 50px;
+      right: -25px;
+      background: rgba(239, 68, 68, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 12px 18px;
+      color: white;
+      box-shadow: 0 15px 30px rgba(239, 68, 68, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transform: rotate(5deg) scale(0);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 50;
+    }
+    .stopwatch-overlay.show {
+      transform: rotate(5deg) scale(1);
+    }
+    .stopwatch-time {
+      font-size: 26px;
+      font-weight: 800;
+      font-family: 'Fira Code', monospace;
+      letter-spacing: -0.5px;
+    }
+    .stopwatch-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      opacity: 0.9;
+    }
+
+    /* SCENE 3 & 4: DoubleTake Floating Widget Component */
+    .dt-popup {
+      position: absolute;
+      width: 440px;
+      background: rgba(24, 28, 38, 0.92);
+      backdrop-filter: blur(30px) saturate(140%);
+      -webkit-backdrop-filter: blur(30px) saturate(140%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 25px rgba(56, 189, 248, 0.2);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 100;
+      opacity: 0;
+      transform: scale(0.6) translateY(20px);
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+    }
+
+    .dt-popup.show {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+    }
+
+    .dt-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dt-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dt-icon-badge {
+      width: 20px;
+      height: 20px;
+      position: relative;
+    }
+    .dt-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .dt-engine-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .dt-source-box {
+      background: rgba(37, 99, 235, 0.15);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #93c5fd;
+    }
+
+    .dt-lang-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+    }
+    .dt-lang-tag {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 2px 8px;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .dt-result-text {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: -0.2px;
+      line-height: 1.4;
+      padding: 2px 0;
+    }
+
+    .dt-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 10px;
+      font-size: 11.5px;
+    }
+    .dt-latency {
+      color: #4ade80;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+    .dt-latency::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 8px #4ade80;
+    }
+
+    .dt-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .dt-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dt-btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+    .dt-btn-primary {
+      background: #2563eb;
+      color: white;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+    }
+    .dt-btn-primary.clicked {
+      transform: scale(0.92);
+      background: #1d4ed8;
+    }
+
+    /* Giant 3D Ctrl Key Display */
+    .ctrl-key-presenter {
+      position: absolute;
+      bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 120;
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .ctrl-key-presenter.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .keycap-3d {
+      width: 90px;
+      height: 72px;
+      background: linear-gradient(180deg, #f8f9fa 0%, #cbd5e1 100%);
+      border-radius: 14px;
+      box-shadow: 0 10px 0 #64748b, 0 16px 25px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #1e293b;
+      position: relative;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+    .keycap-3d.pressed {
+      transform: translateY(6px);
+      box-shadow: 0 4px 0 #64748b, 0 8px 15px rgba(0, 0, 0, 0.4);
+      background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+      color: #ffffff;
+    }
+    .keycap-sub {
+      font-size: 8.5px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 1px;
+    }
+    .keycap-3d.pressed .keycap-sub {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .tap-counter-badge {
+      background: #4ade80;
+      color: #090e1a;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px #4ade80;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .tap-counter-badge.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* SCENE 5: Climax Bento Grid & CTA */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 880px;
+      margin-bottom: 24px;
+    }
+
+    .bento-item {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+    .bento-item:hover {
+      transform: translateY(-2px);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .bento-icon {
+      font-size: 22px;
+    }
+    .bento-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .bento-desc {
+      font-size: 12.5px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .cta-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cta-btn {
+      background: linear-gradient(135deg, #0078d4, #00b5f1);
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 12px 32px;
+      border-radius: 10px;
+      border: none;
+      box-shadow: 0 4px 20px rgba(0, 120, 212, 0.5);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cta-btn:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 25px rgba(0, 120, 212, 0.7);
+    }
+
+    .cta-tags {
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      gap: 12px;
+    }
+
+    /* Video Control Deck (Bottom Bar) */
+    .control-deck {
+      width: 95vw;
+      max-width: 1280px;
+      background: rgba(18, 24, 38, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      margin-top: 14px;
+      padding: 12px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .scrubber-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .time-display {
+      font-family: 'Fira Code', monospace;
+      font-size: 12px;
+      color: #94a3b8;
+      min-width: 80px;
+    }
+
+    .scrubber-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .scrubber-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #2563eb);
+      border-radius: 3px;
+    }
+
+    .deck-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .deck-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .deck-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .deck-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .deck-btn.primary {
+      background: #2563eb;
+      color: #fff;
+      border-color: #3b82f6;
+    }
+
+    .scene-jump-group {
+      display: flex;
+      gap: 4px;
+    }
+    .jump-chip {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .jump-chip:hover {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .jump-chip.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .deck-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 16:9 Screen Presentation Canvas -->
+  <div class="stage-wrapper" id="stageWrapper">
+    <!-- Top Branding / Ambient Header -->
+    <div class="top-bar">
+      <div class="brand-tag">
+        <div class="brand-icon">
+          <div class="brand-tile-a">A</div>
+          <div class="brand-tile-wen">文</div>
+        </div>
+        <span>DoubleTake</span>
+      </div>
+      <div class="scene-pill" id="currentScenePill">
+        <div class="dot"></div>
+        <span id="scenePillText">Scene 1 · The Friction</span>
+      </div>
+    </div>
+
+    <!-- Virtual Mouse Cursor -->
+    <div class="v-cursor" id="vCursor" style="transform: translate(640px, 360px);">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 2L20 12L12.5 13.5L8.5 21L4 2Z" fill="#ffffff" stroke="#000000" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- MAIN SCENES STAGE -->
+    <div class="stage">
+
+      <!-- ================= SCENE 1: The Reading Flow Interrupted ================= -->
+      <div class="scene active" id="scene1">
+        <div class="scene-header">
+          <span class="scene-eyebrow eyebrow-red">The Problem</span>
+          <h2 class="scene-title">You're deep in your workflow and hit a foreign phrase.</h2>
+          <p class="scene-subtitle">What happens next destroys your focus.</p>
+        </div>
+
+        <div class="mock-window editor-window">
+          <div class="window-header">
+            <div class="window-dots">
+              <div class="window-dot dot-red"></div>
+              <div class="window-dot dot-yellow"></div>
+              <div class="window-dot dot-green"></div>
+            </div>
+            <div class="window-title">architecture_spec.md — Visual Studio Code</div>
+            <div></div>
+          </div>
+          <div class="editor-body">
+            <p><span class="code-comment"># System Reliability Architecture (v3.2)</span></p>
+            <br>
+            <p>Our distributed microservices layer leverages auto-scaling clusters across multiple availability zones.</p>
+            <br>
+            <p>
+              According to the lead engineering documentation: 
+              <span class="target-phrase-wrapper" id="targetPhrase1">"Die Architektur gewährleistet maximale Ausfallsicherheit und minimale Latenz."</span>
+            </p>
+            <br>
+            <p><span class="code-comment">// Want to understand this without losing your momentum?</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 2: Browser Alt+Tab Chaos ================= -->
+      <div class="scene" id="scene2">
+        <div class="scene-header">
+          <span class="scene-eyebrow eyebrow-red">The 5-Step Agony</span>
+          <h2 class="scene-title">Copy · Alt+Tab · Open Chrome · Paste · Alt+Tab Back</h2>
+          <p class="scene-subtitle">5 context switches. 12 seconds lost. Train of thought gone.</p>
+        </div>
+
+        <div class="mock-window browser-window">
+          <div class="browser-tabs">
+            <div class="browser-tab">GitHub · PR #412</div>
+            <div class="browser-tab">Stack Overflow</div>
+            <div class="browser-tab">Jira Ticket #981</div>
+            <div class="browser-tab active">Google Translate</div>
+            <div class="browser-tab">+ 38 other tabs</div>
+          </div>
+          <div class="browser-address-bar">
+            <div class="url-input">https://translate.google.com/?sl=de&tl=en</div>
+          </div>
+          <div class="browser-content">
+            <div class="translate-panel">
+              <div class="panel-lang">German (Detected)</div>
+              <div class="panel-text" id="browserInputText">Die Architektur gewährleistet maximale Ausfallsicherheit und minimale Latenz.</div>
+            </div>
+            <div class="translate-panel" style="background: #1b263b;">
+              <div class="panel-lang">English</div>
+              <div class="panel-text" id="browserOutputText">The architecture ensures maximum resilience and minimal latency.</div>
+            </div>
+          </div>
+
+          <!-- Stopwatch Overlay -->
+          <div class="stopwatch-overlay" id="scene2Stopwatch">
+            <span class="stopwatch-time" id="stopwatchVal">12.4s</span>
+            <span class="stopwatch-label">Lost per lookup</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 3: Enter DoubleTake (The Instant Cure) ================= -->
+      <div class="scene" id="scene3">
+        <div class="scene-header">
+          <span class="scene-eyebrow eyebrow-blue">The DoubleTake Way</span>
+          <h2 class="scene-title">Select Text. Double-tap <kbd style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.2);">Ctrl</kbd>. Done.</h2>
+          <p class="scene-subtitle">Never switch windows. Instant translation right beside your cursor.</p>
+        </div>
+
+        <div class="mock-window editor-window" style="position: relative;">
+          <div class="window-header">
+            <div class="window-dots">
+              <div class="window-dot dot-red"></div>
+              <div class="window-dot dot-yellow"></div>
+              <div class="window-dot dot-green"></div>
+            </div>
+            <div class="window-title">architecture_spec.md — Visual Studio Code</div>
+            <div></div>
+          </div>
+          <div class="editor-body">
+            <p><span class="code-comment"># System Reliability Architecture (v3.2)</span></p>
+            <br>
+            <p>Our distributed microservices layer leverages auto-scaling clusters across multiple availability zones.</p>
+            <br>
+            <p>
+              According to the lead engineering documentation: 
+              <span class="target-phrase-wrapper selected" id="targetPhrase3">"Die Architektur gewährleistet maximale Ausfallsicherheit und minimale Latenz."</span>
+            </p>
+          </div>
+
+          <!-- Floating DoubleTake Popup -->
+          <div class="dt-popup" id="dtPopup" style="top: 105px; left: 180px;">
+            <div class="dt-header">
+              <div class="dt-header-left">
+                <div class="dt-icon-badge">
+                  <div class="brand-tile-a">A</div>
+                  <div class="brand-tile-wen">文</div>
+                </div>
+                <span class="dt-title">DoubleTake</span>
+                <span class="dt-engine-pill">Bing ▾</span>
+              </div>
+              <div style="color: #64748b; font-size: 13px;">✕</div>
+            </div>
+
+            <div class="dt-source-box">
+              Die Architektur gewährleistet maximale Ausfallsicherheit...
+            </div>
+
+            <div class="dt-lang-row">
+              <span class="dt-lang-tag">DE German</span>
+              <span style="color: #64748b;">➔</span>
+              <span class="dt-lang-tag" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">EN English</span>
+            </div>
+
+            <div class="dt-result-text">
+              The architecture ensures maximum resilience and minimal latency.
+            </div>
+
+            <div class="dt-footer">
+              <div class="dt-latency">112ms</div>
+              <div class="dt-actions">
+                <button class="dt-btn dt-btn-secondary">Copy</button>
+                <button class="dt-btn dt-btn-primary" id="dtReplaceBtn">Replace</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D Ctrl Keycap Animation in Scene 3 -->
+        <div class="ctrl-key-presenter" id="ctrlPresenter">
+          <div class="keycap-3d" id="ctrlKeycap">
+            <span>Ctrl</span>
+            <span class="keycap-sub">CONTROL</span>
+          </div>
+          <div class="tap-counter-badge" id="tapBadge1">1</div>
+          <div class="tap-counter-badge" id="tapBadge2">2</div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 4: In-Place Replacement ================= -->
+      <div class="scene" id="scene4">
+        <div class="scene-header">
+          <span class="scene-eyebrow eyebrow-green">One-Click Magic</span>
+          <h2 class="scene-title">Hit "Replace" — Text Morphs Right in Place</h2>
+          <p class="scene-subtitle">No manual pasting. Your editor or document updates instantly.</p>
+        </div>
+
+        <div class="mock-window editor-window">
+          <div class="window-header">
+            <div class="window-dots">
+              <div class="window-dot dot-red"></div>
+              <div class="window-dot dot-yellow"></div>
+              <div class="window-dot dot-green"></div>
+            </div>
+            <div class="window-title">architecture_spec.md — Visual Studio Code</div>
+            <div></div>
+          </div>
+          <div class="editor-body">
+            <p><span class="code-comment"># System Reliability Architecture (v3.2)</span></p>
+            <br>
+            <p>Our distributed microservices layer leverages auto-scaling clusters across multiple availability zones.</p>
+            <br>
+            <p>
+              According to the lead engineering documentation: 
+              <span class="target-phrase-wrapper" id="targetPhrase4" style="color: #4ade80; font-weight: 600;">
+                "The architecture ensures maximum resilience and minimal latency."
+              </span>
+            </p>
+            <br>
+            <p><span class="code-comment">// Done in 0.3s without ever leaving your IDE! 🚀</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 5: The Summary Bento & CTA ================= -->
+      <div class="scene" id="scene5">
+        <div class="scene-header">
+          <span class="scene-eyebrow eyebrow-blue">Desktop Companion for Windows</span>
+          <h2 class="scene-title">Stay in Your Flow. Double-Tap Ctrl.</h2>
+          <p class="scene-subtitle">Lightweight, private, and lightning fast.</p>
+        </div>
+
+        <div class="bento-grid">
+          <div class="bento-item">
+            <div class="bento-icon">⚡</div>
+            <div class="bento-title">Zero Friction</div>
+            <div class="bento-desc">Works across VS Code, Slack, Word, Chrome, PDFs, and Terminals.</div>
+          </div>
+          <div class="bento-item">
+            <div class="bento-icon">🌐</div>
+            <div class="bento-title">7 Global Engines</div>
+            <div class="bento-desc">Google, DeepL, Bing, Baidu, Papago, Yandex, and Youdao.</div>
+          </div>
+          <div class="bento-item">
+            <div class="bento-icon">🔒</div>
+            <div class="bento-title">100% Private & Local</div>
+            <div class="bento-desc">Encrypted with Windows PasswordVault. 0 tracking or cloud telemetry.</div>
+          </div>
+        </div>
+
+        <div class="cta-container">
+          <button class="cta-btn">
+            <span>Download DoubleTake for Windows</span>
+            <span>➔</span>
+          </button>
+          <div class="cta-tags">
+            <span>Free & Open Source</span> • <span>WinUI 3 & .NET 8</span> • <span>Windows 11 Fluent</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM CONTROL DECK -->
+  <div class="control-deck">
+    <div class="scrubber-row">
+      <div class="time-display" id="timeDisplay">00:00 / 00:28</div>
+      <div class="scrubber-track" id="scrubberTrack">
+        <div class="scrubber-fill" id="scrubberFill"></div>
+      </div>
+    </div>
+    <div class="deck-buttons">
+      <div class="deck-left">
+        <button class="deck-btn primary" id="playBtn">
+          <span id="playIcon">▶</span>
+          <span id="playText">Play</span>
+        </button>
+        <button class="deck-btn" id="restartBtn">↺ Restart</button>
+        <div class="scene-jump-group">
+          <button class="jump-chip active" data-scene="0">1. Problem</button>
+          <button class="jump-chip" data-scene="1">2. Browser Agony</button>
+          <button class="jump-chip" data-scene="2">3. DoubleTake</button>
+          <button class="jump-chip" data-scene="3">4. Morph Replace</button>
+          <button class="jump-chip" data-scene="4">5. Overview & CTA</button>
+        </div>
+      </div>
+      <div class="deck-right">
+        <button class="deck-btn" id="soundBtn">🔊 Sound: ON</button>
+        <button class="deck-btn" id="speedBtn">1.0x</button>
+        <button class="deck-btn" id="fullscreenBtn">⛶ Fullscreen</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Total timeline duration in milliseconds
+    const TOTAL_DURATION = 28000;
+    
+    // Scene timings [startMs, endMs, name]
+    const SCENES = [
+      { id: 'scene1', start: 0, end: 5500, title: 'Scene 1 · The Friction' },
+      { id: 'scene2', start: 5500, end: 12500, title: 'Scene 2 · Browser Tab Chaos' },
+      { id: 'scene3', start: 12500, end: 20000, title: 'Scene 3 · DoubleTake Double-Ctrl' },
+      { id: 'scene4', start: 20000, end: 24000, title: 'Scene 4 · In-Place Replace' },
+      { id: 'scene5', start: 24000, end: 28000, title: 'Scene 5 · Summary & Download' }
+    ];
+
+    let currentTime = 0;
+    let isPlaying = true;
+    let playbackSpeed = 1.0;
+    let lastTimestamp = null;
+    let soundEnabled = true;
+
+    // DOM Elements
+    const stageWrapper = document.getElementById('stageWrapper');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const scrubberFill = document.getElementById('scrubberFill');
+    const scrubberTrack = document.getElementById('scrubberTrack');
+    const playBtn = document.getElementById('playBtn');
+    const playIcon = document.getElementById('playIcon');
+    const playText = document.getElementById('playText');
+    const restartBtn = document.getElementById('restartBtn');
+    const soundBtn = document.getElementById('soundBtn');
+    const speedBtn = document.getElementById('speedBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const scenePillText = document.getElementById('scenePillText');
+    const jumpChips = document.querySelectorAll('.jump-chip');
+    const vCursor = document.getElementById('vCursor');
+
+    // Scene Specific Elements
+    const targetPhrase1 = document.getElementById('targetPhrase1');
+    const scene2Stopwatch = document.getElementById('scene2Stopwatch');
+    const stopwatchVal = document.getElementById('stopwatchVal');
+    const dtPopup = document.getElementById('dtPopup');
+    const ctrlPresenter = document.getElementById('ctrlPresenter');
+    const ctrlKeycap = document.getElementById('ctrlKeycap');
+    const tapBadge1 = document.getElementById('tapBadge1');
+    const tapBadge2 = document.getElementById('tapBadge2');
+    const dtReplaceBtn = document.getElementById('dtReplaceBtn');
+
+    // ================= WEB AUDIO SYNTHESIZER =================
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // Mechanical keypress click sound
+    function playKeySound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(120, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.07);
+      } catch (e) {}
+    }
+
+    // Subtle whoosh for popup spring
+    function playWhooshSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(650, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.14);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    // Success Chime
+    function playChimeSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); // A5
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.36);
+      } catch (e) {}
+    }
+
+    // ================= TIMELINE ANIMATION ENGINE =================
+    let triggeredEvents = new Set();
+
+    function renderFrame(time) {
+      // 1. Update Scrubber UI
+      const progress = Math.min(time / TOTAL_DURATION, 1);
+      scrubberFill.style.width = (progress * 100) + '%';
+      
+      const curSec = Math.floor(time / 1000);
+      const totalSec = Math.floor(TOTAL_DURATION / 1000);
+      timeDisplay.textContent = `00:${curSec.toString().padStart(2, '0')} / 00:${totalSec.toString().padStart(2, '0')}`;
+
+      // 2. Identify Active Scene
+      let activeIdx = 0;
+      for (let i = 0; i < SCENES.length; i++) {
+        if (time >= SCENES[i].start && time < SCENES[i].end) {
+          activeIdx = i;
+          break;
+        }
+        if (time >= SCENES[SCENES.length - 1].start) {
+          activeIdx = SCENES.length - 1;
+        }
+      }
+
+      // Update scene pill
+      scenePillText.textContent = SCENES[activeIdx].title;
+      jumpChips.forEach((chip, idx) => {
+        chip.classList.toggle('active', idx === activeIdx);
+      });
+
+      // Switch active scene visibility
+      SCENES.forEach((sc, idx) => {
+        const el = document.getElementById(sc.id);
+        if (idx === activeIdx) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+
+      // ================= SCENE SPECIFIC MOTION CHOREOGRAPHY =================
+
+      // Scene 1: Selection Motion
+      if (activeIdx === 0) {
+        const scTime = time - SCENES[0].start;
+        if (scTime < 1500) {
+          vCursor.style.opacity = '1';
+          vCursor.style.transform = `translate(420px, 340px)`;
+          targetPhrase1.classList.remove('selected');
+        } else if (scTime >= 1500 && scTime < 3200) {
+          // Cursor drags across phrase
+          const dragP = (scTime - 1500) / 1700;
+          vCursor.style.transform = `translate(${420 + dragP * 380}px, 340px)`;
+          targetPhrase1.classList.add('selected');
+        } else {
+          vCursor.style.transform = `translate(800px, 340px)`;
+          targetPhrase1.classList.add('selected');
+        }
+      }
+
+      // Scene 2: Browser & Stopwatch
+      if (activeIdx === 1) {
+        const scTime = time - SCENES[1].start;
+        vCursor.style.transform = `translate(620px, 280px)`;
+        if (scTime > 800) {
+          scene2Stopwatch.classList.add('show');
+          const fakeSeconds = (1.5 + (scTime / 1000) * 1.6).toFixed(1);
+          stopwatchVal.textContent = fakeSeconds + 's';
+        } else {
+          scene2Stopwatch.classList.remove('show');
+        }
+      } else {
+        scene2Stopwatch.classList.remove('show');
+      }
+
+      // Scene 3: DoubleTake Double Ctrl Tap
+      if (activeIdx === 2) {
+        const scTime = time - SCENES[2].start;
+        ctrlPresenter.classList.add('show');
+
+        // Tap 1 at 1000ms
+        if (scTime >= 1000 && scTime < 1300) {
+          ctrlKeycap.classList.add('pressed');
+          tapBadge1.classList.add('show');
+          if (!triggeredEvents.has('tap1')) {
+            playKeySound();
+            triggeredEvents.add('tap1');
+          }
+        } else if (scTime >= 1300 && scTime < 1600) {
+          ctrlKeycap.classList.remove('pressed');
+        } 
+        // Tap 2 at 1600ms
+        else if (scTime >= 1600 && scTime < 2100) {
+          ctrlKeycap.classList.add('pressed');
+          tapBadge2.classList.add('show');
+          if (!triggeredEvents.has('tap2')) {
+            playKeySound();
+            triggeredEvents.add('tap2');
+          }
+        } else {
+          ctrlKeycap.classList.remove('pressed');
+        }
+
+        // DoubleTake popup springs up at 2100ms
+        if (scTime >= 2100) {
+          dtPopup.classList.add('show');
+          if (!triggeredEvents.has('popupWhoosh')) {
+            playWhooshSound();
+            triggeredEvents.add('popupWhoosh');
+          }
+          // Move cursor to "Replace" button
+          if (scTime >= 4000) {
+            vCursor.style.transform = `translate(540px, 350px)`;
+          }
+        } else {
+          dtPopup.classList.remove('show');
+        }
+      } else {
+        ctrlPresenter.classList.remove('show');
+        tapBadge1.classList.remove('show');
+        tapBadge2.classList.remove('show');
+        dtPopup.classList.remove('show');
+      }
+
+      // Scene 4: Morph Replace
+      if (activeIdx === 3) {
+        const scTime = time - SCENES[3].start;
+        vCursor.style.transform = `translate(540px, 350px)`;
+        if (!triggeredEvents.has('chime')) {
+          playChimeSound();
+          triggeredEvents.add('chime');
+        }
+      }
+
+      // Scene 5: Bento & CTA
+      if (activeIdx === 4) {
+        vCursor.style.opacity = '0';
+      } else {
+        vCursor.style.opacity = '1';
+      }
+    }
+
+    // Animation Loop
+    function tick(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const delta = (timestamp - lastTimestamp) * playbackSpeed;
+      lastTimestamp = timestamp;
+
+      if (isPlaying) {
+        currentTime += delta;
+        if (currentTime >= TOTAL_DURATION) {
+          currentTime = 0; // Loop seamlessly
+          triggeredEvents.clear();
+        }
+        renderFrame(currentTime);
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    // Start loop
+    requestAnimationFrame(tick);
+
+    // ================= CONTROLS & EVENT LISTENERS =================
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      playIcon.textContent = isPlaying ? '⏸' : '▶';
+      playText.textContent = isPlaying ? 'Pause' : 'Play';
+      if (isPlaying) {
+        getAudioCtx(); // unlock web audio
+      }
+    }
+
+    playBtn.addEventListener('click', togglePlay);
+
+    restartBtn.addEventListener('click', () => {
+      currentTime = 0;
+      triggeredEvents.clear();
+      renderFrame(0);
+      if (!isPlaying) togglePlay();
+    });
+
+    // Jump to scenes
+    jumpChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const scIdx = parseInt(chip.getAttribute('data-scene'));
+        currentTime = SCENES[scIdx].start + 50;
+        triggeredEvents.clear();
+        renderFrame(currentTime);
+      });
+    });
+
+    // Scrubber click & drag
+    function seekFromEvent(e) {
+      const rect = scrubberTrack.getBoundingClientRect();
+      const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const targetRatio = clickX / rect.width;
+      currentTime = targetRatio * TOTAL_DURATION;
+      triggeredEvents.clear();
+      renderFrame(currentTime);
+    }
+
+    let isScrubbing = false;
+    scrubberTrack.addEventListener('mousedown', (e) => {
+      isScrubbing = true;
+      seekFromEvent(e);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isScrubbing) seekFromEvent(e);
+    });
+
+    window.addEventListener('mouseup', () => {
+      isScrubbing = false;
+    });
+
+    // Sound toggle
+    soundBtn.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      soundBtn.textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+      if (soundEnabled) getAudioCtx();
+    });
+
+    // Speed toggle
+    speedBtn.addEventListener('click', () => {
+      if (playbackSpeed === 1.0) {
+        playbackSpeed = 1.5;
+        speedBtn.textContent = '1.5x';
+      } else if (playbackSpeed === 1.5) {
+        playbackSpeed = 2.0;
+        speedBtn.textContent = '2.0x';
+      } else {
+        playbackSpeed = 1.0;
+        speedBtn.textContent = '1.0x';
+      }
+    });
+
+    // Fullscreen for clean screen recording
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        stageWrapper.requestFullscreen().catch(err => alert(err.message));
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    // Spacebar to pause/play
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      }
+    });
+  </script>
+</body>
+</html>
