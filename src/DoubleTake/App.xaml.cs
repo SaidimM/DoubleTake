@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.UI.Xaml;
@@ -34,8 +35,7 @@ namespace QuickTranslator
             this.InitializeComponent();
             this.UnhandledException += (s, e) =>
             {
-                try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\DoubleTake\crash.log", e.Exception.ToString()); }
-                catch { }
+                WriteCrashLog(e.Exception);
                 e.Handled = true;
             };
         }
@@ -108,8 +108,7 @@ namespace QuickTranslator
             }
             catch (Exception ex)
             {
-                try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\DoubleTake\crash.log", ex.ToString()); }
-                catch { }
+                WriteCrashLog(ex);
             }
         }
 
@@ -154,7 +153,7 @@ namespace QuickTranslator
                 catch (Exception ex)
                 {
                     QuickTranslator.Helpers.DebugLog.Write($"App.OnDoubleCtrl: Exception: {ex}");
-                    try { System.IO.File.WriteAllText(@"C:\Users\Saidi\IdeaProjects\DoubleTake\crash.log", ex.ToString()); } catch { }
+                    WriteCrashLog(ex);
                 }
             });
         }
@@ -163,6 +162,19 @@ namespace QuickTranslator
         {
             if (m_popup == null)
                 m_popup = new QuickPopup();
+        }
+
+        private static void WriteCrashLog(Exception ex)
+        {
+            if (ex == null) return;
+            try
+            {
+                string logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".doubletake");
+                Directory.CreateDirectory(logDir);
+                string logPath = Path.Combine(logDir, "crash.log");
+                File.AppendAllText(logPath, $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC]{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}");
+            }
+            catch { }
         }
     }
 }

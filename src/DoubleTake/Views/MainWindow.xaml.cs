@@ -148,11 +148,30 @@ namespace QuickTranslator
             await RefreshBlacklistDisplayAsync();
 
             PopulateWorkspaceTargetLanguages(config.DefaultTargetLang);
+            PopulateLanguageCombo(DefaultTargetLangCombo, config.DefaultTargetLang);
+            PopulateLanguageCombo(SecondaryTargetLangCombo, config.SecondaryTargetLang);
+            SecondaryTargetLangCombo.IsEnabled = config.SmartBiDirectional;
 
             UpdateEngineDrawer(config.ActiveEngine);
             UpdateProviderStatusBadge(config.ActiveEngine);
 
             _isInitializing = false;
+        }
+
+        private void PopulateLanguageCombo(ComboBox combo, string selectedCode)
+        {
+            combo.Items.Clear();
+            int selectedIndex = 0;
+            for (int i = 0; i < SettingsManager.LanguageCatalog.Length; i++)
+            {
+                var (code, displayName) = SettingsManager.LanguageCatalog[i];
+                combo.Items.Add(new ComboBoxItem { Content = displayName, Tag = code });
+                if (code.Equals(selectedCode, StringComparison.OrdinalIgnoreCase))
+                {
+                    selectedIndex = i;
+                }
+            }
+            combo.SelectedIndex = selectedIndex;
         }
 
         private void PopulateWorkspaceTargetLanguages(string selectCode = "zh-CN")
@@ -407,9 +426,34 @@ namespace QuickTranslator
 
         private void SmartBiDirectionalToggle_Toggled(object sender, RoutedEventArgs e)
         {
+            if (SecondaryTargetLangCombo != null)
+            {
+                SecondaryTargetLangCombo.IsEnabled = SmartBiDirectionalToggle.IsOn;
+            }
             if (!_isInitializing)
             {
                 SettingsManager.Current.SmartBiDirectional = SmartBiDirectionalToggle.IsOn;
+                SettingsManager.SaveSettings();
+            }
+        }
+
+        private void DefaultTargetLangCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+            if (DefaultTargetLangCombo.SelectedItem is ComboBoxItem item && item.Tag is string code)
+            {
+                SettingsManager.Current.DefaultTargetLang = code;
+                SettingsManager.SaveSettings();
+                PopulateWorkspaceTargetLanguages(code);
+            }
+        }
+
+        private void SecondaryTargetLangCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+            if (SecondaryTargetLangCombo.SelectedItem is ComboBoxItem item && item.Tag is string code)
+            {
+                SettingsManager.Current.SecondaryTargetLang = code;
                 SettingsManager.SaveSettings();
             }
         }
@@ -625,7 +669,7 @@ namespace QuickTranslator
             try
             {
                 string sourceLang = (SourceLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "auto";
-                string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "zh-CN";
+                string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? SettingsManager.Current.DefaultTargetLang ?? "zh-CN";
 
                 SettingsManager.RecordLanguageUsed(targetLang);
 

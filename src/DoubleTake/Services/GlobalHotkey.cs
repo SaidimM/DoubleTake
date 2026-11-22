@@ -102,9 +102,9 @@ namespace QuickTranslator
                     {
                         var now = DateTime.UtcNow;
                         double elapsed = (now - _lastCtrlPressTime).TotalMilliseconds;
-                        int maxSpeed = SettingsManager.Current?.DoubleTapIntervalMs ?? 550;
+                        int maxSpeed = Math.Clamp(SettingsManager.Current?.SpeedWindowMs ?? 550, 200, 1500);
                         QuickTranslator.Helpers.DebugLog.Write($"GlobalHotkey: Ctrl released, elapsed={elapsed:F0}ms, maxSpeed={maxSpeed}ms");
-                        if (elapsed >= 15 && elapsed <= Math.Max(700, maxSpeed + 100))
+                        if (elapsed >= 15 && elapsed <= maxSpeed)
                         {
                             _lastCtrlPressTime = DateTime.MinValue;
                             QuickTranslator.Helpers.DebugLog.Write("GlobalHotkey: Firing DoubleCtrlPressed event!");

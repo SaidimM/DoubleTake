@@ -304,18 +304,56 @@ namespace QuickTranslator
 
         private string ResolveTargetCodeForText(string text)
         {
-            if (string.IsNullOrWhiteSpace(text)) return "zh-CN";
+            var config = SettingsManager.Current;
+            string primary = string.IsNullOrWhiteSpace(config.DefaultTargetLang) ? "zh-CN" : config.DefaultTargetLang;
+            string secondary = string.IsNullOrWhiteSpace(config.SecondaryTargetLang) ? "en" : config.SecondaryTargetLang;
 
-            bool isChinese = Regex.IsMatch(text, @"[\u4e00-\u9fa5]");
-            bool isJapanese = Regex.IsMatch(text, @"[\u3040-\u30ff]");
-            bool isKorean = Regex.IsMatch(text, @"[\uac00-\ud7af]");
-
-            // If input text is Chinese/Japanese/Korean, target English
-            if (isChinese || isJapanese || isKorean)
+            if (string.IsNullOrWhiteSpace(text) || !config.SmartBiDirectional || primary.Equals(secondary, StringComparison.OrdinalIgnoreCase))
             {
-                return "en";
+                return primary;
             }
-            return "zh-CN";
+
+            bool hasKana = Regex.IsMatch(text, @"[\u3040-\u30ff]");
+            bool hasHangul = Regex.IsMatch(text, @"[\uac00-\ud7af]");
+            bool hasHan = Regex.IsMatch(text, @"[\u4e00-\u9fa5]");
+            bool hasCyrillic = Regex.IsMatch(text, @"[\u0400-\u04ff]");
+            bool hasLatin = Regex.IsMatch(text, @"[A-Za-z]");
+
+            string primaryBase = primary.Split('-')[0].ToLowerInvariant();
+            bool matchesPrimary;
+            if (primary.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+            {
+                matchesPrimary = hasHan && !hasKana && !hasHangul;
+            }
+            else if (primaryBase == "ja")
+            {
+                matchesPrimary = hasKana || (hasHan && !hasHangul);
+            }
+            else if (primaryBase == "ko")
+            {
+                matchesPrimary = hasHangul;
+            }
+            else if (primaryBase == "ru")
+            {
+                matchesPrimary = hasCyrillic;
+            }
+            else if (IsLatinLanguage(primary))
+            {
+                matchesPrimary = !IsLatinLanguage(secondary) && hasLatin && !hasHan && !hasKana && !hasHangul && !hasCyrillic;
+            }
+            else
+            {
+                matchesPrimary = false;
+            }
+
+            return matchesPrimary ? secondary : primary;
+        }
+
+        private static bool IsLatinLanguage(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return false;
+            string baseCode = code.Split('-')[0].ToLowerInvariant();
+            return baseCode is "en" or "es" or "fr" or "de";
         }
 
         private async Task ReTranslateAsync(CancellationToken ct = default)
@@ -327,7 +365,7 @@ namespace QuickTranslator
             LoadingRing.Visibility = Visibility.Visible;
             StatusDot.Fill = new SolidColorBrush(Color.FromArgb(0xFF, 0x38, 0xBD, 0xF8));
 
-            string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "zh-CN";
+            string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? SettingsManager.Current.DefaultTargetLang ?? "zh-CN";
             string engine = (EngineQuickCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? SettingsManager.Current.ActiveEngine;
             TranslateStatusText.Text = $"{engine} Engine · Translating…";
 
@@ -531,7 +569,7 @@ namespace QuickTranslator
         {
             string source = SourceTextBlock.Text;
             string target = TranslatedTextBlock.Text;
-            string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "zh-CN";
+            string targetLang = (TargetLangCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? SettingsManager.Current.DefaultTargetLang ?? "zh-CN";
 
             HidePopup();
             OnOpenInWorkspaceRequested?.Invoke(source, target, targetLang);

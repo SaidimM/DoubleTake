@@ -55,12 +55,14 @@ Switch effortlessly between industry-leading global and regional engines:
 | Engine | Coverage / Strengths | Authentication |
 | :--- | :--- | :--- |
 | **Google Translate** | Global #1 · 130+ languages · High speed | **Free & Built-in** (No setup) |
-| **Bing / Edge Translator** | Microsoft Azure translation service | **Free & Built-in** (No setup) |
+| **Bing / Edge Translator** | Microsoft Bing / Edge web translator | **Free & Built-in** (No setup) |
 | **DeepL API** | Nuanced European & Japanese phrasing | DeepL API Key (Free & Pro tier) |
 | **Baidu Fanyi (百度翻译)** | China #1 leading linguistic engine | App ID + Secret Key |
 | **Naver Papago (파파고)** | South Korea #1 conversational model | Client ID + Client Secret |
 | **Yandex Translate** | High accuracy for Russian & CIS languages | API Key |
 | **Youdao Translate (网易有道)** | Specialized technical & academic lexicon | App Key + App Secret |
+
+> **Note:** DoubleTake is a free, open-source personal/research utility. The built-in Google and Bing engines use best-effort public web endpoints that may be rate-limited or change upstream; for heavy daily or production reliability, configure your own API key (BYOK) in **Settings**.
 
 ### 3. 🔐 Hardware-Encrypted Credential Vault
 All user API keys and secrets are encrypted directly into the native Windows `PasswordVault` (Windows Credential Manager). Credentials never touch plain text config files or external servers.

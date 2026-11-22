@@ -644,9 +644,25 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock Text="Smart Bi-directional Language Switching" FontSize="13" />
-                                        <TextBlock Text="Automatically inverts target language (English ➔ Chinese, Chinese/Japanese/Korean ➔ English)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                        <TextBlock Text="Automatically flips between Primary and Secondary target languages when input matches your primary script" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                     </StackPanel>
                                     <ToggleSwitch x:Name="SmartBiDirectionalToggle" Grid.Column="1" IsOn="True" Toggled="SmartBiDirectionalToggle_Toggled" />
+                                </Grid>
+
+                                <!-- Default & Secondary Language Pickers -->
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="Primary Target Language" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <ComboBox x:Name="DefaultTargetLangCombo" HorizontalAlignment="Stretch" SelectionChanged="DefaultTargetLangCombo_SelectionChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="Secondary (Flip) Language" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <ComboBox x:Name="SecondaryTargetLangCombo" HorizontalAlignment="Stretch" SelectionChanged="SecondaryTargetLangCombo_SelectionChanged" />
+                                    </StackPanel>
                                 </Grid>
                             </StackPanel>
                         </Border>
