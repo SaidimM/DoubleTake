@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-release:
     runs-on: windows-latest
@@ -33,6 +36,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
+        name: DoubleTake ${{ github.ref_name }}
+        generate_release_notes: true
         files: ReleaseOutput/DoubleTake-Setup-*.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -3,7 +3,7 @@
 ; No MSIX, developer mode, or certificates required.
 
 #define MyAppName "DoubleTake"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "Saidi"
 #define MyAppURL "https://github.com/SaidimM/DoubleTake"
 #define MyAppExeName "DoubleTake.exe"

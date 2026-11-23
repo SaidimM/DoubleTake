@@ -832,7 +832,7 @@
                         <!-- Footer -->
                         <StackPanel Spacing="4" HorizontalAlignment="Center" Margin="0,6,0,0">
                             <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextAlignment="Center">
-                                <Run Text="DoubleTake v1.0.7  ·  Built with WinUI 3 + Windows App SDK 1.5" />
+                                <Run Text="DoubleTake v1.0.2  ·  Built with WinUI 3 + Windows App SDK 1.5" />
                             </TextBlock>
                         </StackPanel>
 

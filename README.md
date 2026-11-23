@@ -4,7 +4,7 @@
 ### Modern, Zero-Friction Desktop Translation Companion for Windows
 
 [![Windows 11 Compatible](https://img.shields.io/badge/Windows%2011-Compatible-0078D4?style=flat-square&logo=windows11&logoColor=white)](https://github.com/SaidimM/DoubleTake/releases)
-[![Release](https://img.shields.io/badge/Release-v1.0.1-10B981?style=flat-square&logo=github)](https://github.com/SaidimM/DoubleTake/releases/tag/v1.0.1)
+[![Release](https://img.shields.io/badge/Release-v1.0.2-10B981?style=flat-square&logo=github)](https://github.com/SaidimM/DoubleTake/releases/tag/v1.0.2)
 [![Framework](https://img.shields.io/badge/WinUI%203-Windows%20App%20SDK%201.5-6366F1?style=flat-square)](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
@@ -13,7 +13,7 @@
   No browser tabs. No window switching. No heavyweight bloat.
 </p>
 
-[**Download Installer (.exe)**](https://github.com/SaidimM/DoubleTake/releases/tag/v1.0.1) • [**Key Features**](#-key-features) • [**Quick Start**](#-quick-start--installation) • [**Supported Engines**](#-7-global-translation-engines)
+[**Download Installer (.exe)**](https://github.com/SaidimM/DoubleTake/releases/tag/v1.0.2) • [**Key Features**](#-key-features) • [**Quick Start**](#-quick-start--installation) • [**Supported Engines**](#-7-global-translation-engines)
 
 <br><br>
 
@@ -100,17 +100,18 @@ All user API keys and secrets are encrypted directly into the native Windows `Pa
 ## 📦 Quick Start & Installation
 
 ### Option 1: Standard Setup Wizard (Recommended)
-1. Download **[`DoubleTake-Setup-v1.0.1-win-x64.exe`](https://github.com/SaidimM/DoubleTake/releases/download/v1.0.1/DoubleTake-Setup-v1.0.1-win-x64.exe)** from the [Latest Release](https://github.com/SaidimM/DoubleTake/releases/tag/v1.0.1).
+1. Download **[`DoubleTake-Setup-v1.0.2-win-x64.exe`](https://github.com/SaidimM/DoubleTake/releases/download/v1.0.2/DoubleTake-Setup-v1.0.2-win-x64.exe)** from the [Latest Release](https://github.com/SaidimM/DoubleTake/releases/tag/v1.0.2).
 2. Double-click the installer and complete the setup wizard (*Next → Finish*).
 3. **No certificate import or developer mode required.** DoubleTake will automatically launch in your system tray.
 
-### Option 2: Portable ZIP (Zero Installation)
-1. Download **[`DoubleTake-v1.0.1-win-x64-portable.zip`](https://github.com/SaidimM/DoubleTake/releases/download/v1.0.1/DoubleTake-v1.0.1-win-x64-portable.zip)**.
-2. Extract the archive to any folder and double-click `DoubleTake.exe`.
-
-### Option 3: MSIX Package Sideloading
-1. Download **`DoubleTake-v1.0.1-win-x64.zip`**.
-2. Extract and right-click `Install.ps1` ➔ **Run with PowerShell** (or import `DoubleTake_1.0.1.0_x64.cer` into *Trusted Root Certification Authorities* and install `DoubleTake_1.0.1.0_x64.msix`).
+### Option 2: Build from Source
+1. Ensure the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) is installed on Windows.
+2. Clone the repository and build:
+   ```sh
+   git clone https://github.com/SaidimM/DoubleTake.git
+   cd DoubleTake
+   dotnet build DoubleTake.sln -c Release -p:Platform=x64
+   ```
 
 ---
 
